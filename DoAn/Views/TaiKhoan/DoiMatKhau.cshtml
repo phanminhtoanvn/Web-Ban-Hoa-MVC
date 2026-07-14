@@ -1,0 +1,84 @@
+﻿@{
+    ViewBag.Title = "Đổi mật khẩu";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<style>
+    .auth-glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 30px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.1);
+        max-width: 500px;
+        margin: 50px auto;
+    }
+
+    .form-control {
+        border-radius: 15px;
+        padding: 12px 15px;
+        border: 1px solid #eee;
+    }
+
+        .form-control:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1);
+        }
+</style>
+
+<div class="container">
+    <div class="auth-glass-card">
+        <h3 class="text-center fw-bold text-dark mb-4">Đổi Mật Khẩu</h3>
+
+        @if (ViewBag.ThongBao != null)
+        {
+            <div class="alert alert-success text-center rounded-pill">
+                <i class="fas fa-check-circle me-2"></i>@ViewBag.ThongBao
+            </div>
+            <div class="text-center mt-3">
+                <a href="@Url.Action("ThongTin", "TaiKhoan")" class="btn btn-outline-secondary rounded-pill px-4">
+                    <i class="fas fa-arrow-left me-2"></i>Về trang hồ sơ
+                </a>
+            </div>
+        }
+        else
+        {
+            using (Html.BeginForm("DoiMatKhau", "TaiKhoan", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+
+                if (ViewBag.Loi != null)
+                {
+                    <div class="alert alert-danger text-center rounded-pill">@ViewBag.Loi</div>
+                }
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small ms-2">Mật khẩu hiện tại</label>
+                    <input type="password" name="MatKhauCu" class="form-control" required placeholder="••••••••" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold text-muted small ms-2">Mật khẩu mới</label>
+                    <input type="password" name="MatKhauMoi" class="form-control" required placeholder="••••••••" />
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label fw-bold text-muted small ms-2">Xác nhận mật khẩu mới</label>
+                    <input type="password" name="XacNhanMatKhau" class="form-control" required placeholder="••••••••" />
+                </div>
+
+                <button type="submit" class="btn btn-primary w-100 py-2 rounded-pill fw-bold"
+                        style="background: linear-gradient(45deg, #ec4899, #ff8a80); border:none;">
+                    Lưu thay đổi
+                </button>
+
+                <div class="text-center mt-3">
+                    <a href="@Url.Action("ThongTin", "TaiKhoan")" class="text-decoration-none text-muted small">
+                        <i class="fas fa-times me-1"></i> Hủy bỏ
+                    </a>
+                </div>
+            }
+        }
+    </div>
+</div>

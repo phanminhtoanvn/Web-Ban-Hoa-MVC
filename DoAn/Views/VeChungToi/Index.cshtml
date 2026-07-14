@@ -1,0 +1,73 @@
+﻿@{
+    ViewBag.Title = "Về chúng tôi";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<div class="container-fluid mt-4">
+    <div class="about-header">
+        <h2 class="section-title">Về FlowerShop</h2>
+        <p class="section-subtitle text-pink">
+            "Trao gửi yêu thương qua từng cánh hoa"
+        </p>
+        <p class="text-secondary" style="max-width: 700px; margin: 1rem auto 0;">
+            FlowerShop không chỉ là một cửa hàng hoa. Chúng tôi là những người sứ giả mang thông điệp yêu thương,
+            giúp bạn thể hiện tình cảm một cách tinh tế và ý nghĩa nhất qua những bó hoa tươi thắm.
+        </p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-lg-6">
+            <h3 class_="fw-bold mb-3">Câu chuyện của chúng tôi</h3>
+            <p>
+                Bắt đầu từ một niềm đam mê nhỏ với vẻ đẹp của hoa cỏ, FlowerShop ra đời với mong muốn
+                lan tỏa niềm vui và vẻ đẹp đó đến với mọi người. Chúng tôi tin rằng mỗi bông hoa đều có
+                một câu chuyện riêng, và sứ mệnh của chúng tôi là giúp bạn kể câu chuyện đó.
+            </p>
+            <p>
+                Trải qua nhiều năm, chúng tôi tự hào đã trở thành cầu nối cho hàng ngàn câu chuyện tình yêu,
+                lời chúc mừng, và cả những lời chia sẻ, động viên.
+            </p>
+            <a href="@Url.Action("Index", "Hoa")" class="btn btn-primary-custom mt-2">
+                Khám phá bộ sưu tập
+            </a>
+        </div>
+        <div class="col-lg-6">
+            <img src="~/Content/HinhAnh/vechungtoi.jpg"
+                 alt="Thợ cắm hoa tại FlowerShop"
+                 style="width: 100%; height: 300px; object-fit: cover; border-radius: 0.75rem;" />
+        </div>
+    </div>
+
+    <div class_="about-features">
+        <h2 class="section-title text-center mb-4">Giá trị của chúng tôi</h2>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                    <h5 class="fw-bold">Hoa tươi 100%</h5>
+                    <p class="text-secondary small">Chúng tôi cam kết hoa luôn được nhập mới mỗi ngày từ các vườn hoa uy tín nhất.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h5 class="fw-bold">Giao hàng hỏa tốc</h5>
+                    <p class="text-secondary small">Dịch vụ giao hàng nhanh trong 60 phút nội thành, đảm bảo hoa đến tay bạn vẹn nguyên.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <i class="fas fa-palette"></i>
+                    </div>
+                    <h5 class="fw-bold">Thiết kế tinh tế</h5>
+                    <p class="text-secondary small">Đội ngũ thợ cắm hoa chuyên nghiệp, luôn cập nhật xu hướng để tạo ra những tác phẩm độc đáo.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

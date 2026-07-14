@@ -1,0 +1,86 @@
+﻿
+@model PagedList.IPagedList<tblHoa>
+@using PagedList.Mvc
+@{
+    ViewBag.Title = "Trang chủ";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<section class="py-4">
+    <div class="container-fluid px-0">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="section-title text-start mb-2">Danh Sách Sản Phẩm</h2>
+                <p class="section-subtitle text-start mb-0">Những mẫu hoa được yêu thích nhất</p>
+            </div>
+
+        </div>
+
+        <div class="row g-3 g-lg-4">
+            @foreach (var item in Model)
+            {
+                <div class="col-6 col-md-4 col-lg-3">
+                    <div class="product-card">
+
+                        <div class="product-image">
+                            <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.MaHoa })">
+                                <img src="~/Content/HinhAnh/@item.AnhDaiDien" alt="@item.TenHoa" />
+                            </a>
+                            <span class="product-badge">Giảm 18%</span>
+
+                            <button class="favorite-btn">
+                                <i class="far fa-heart"></i>
+                            </button>
+                        </div>
+
+                        <div class="product-content">
+                            <div class="product-rating">
+                                <i class="fas fa-star text-warning"></i>
+                                <span>4.9</span>
+                                <span class="text-muted">(128)</span>
+                            </div>
+
+                            <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.MaHoa })" style="text-decoration:none">
+                                <h5 class="product-name">@item.TenHoa</h5>
+                            </a>
+
+                            <div class="product-price">
+                                <span class="current-price">@string.Format("{0:#,##0}", item.GiaBan) VNĐ</span>
+                                <span class="original-price">@(string.Format("{0:#,##0}", (item.GiaBan ?? 0) * 1.18m)) VNĐ</span>
+                            </div>
+
+
+
+                            <a href="@Url.Action("ThemGioHang", "GioHang", new { MaHoa = item.MaHoa, strURL = Request.Url.ToString() })"
+                               class="add-to-cart-btn">
+                                <i class="fas fa-shopping-cart me-1"></i> Thêm vào giỏ
+                            </a>
+                        </div>
+
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="d-flex justify-content-center mt-4">
+            @Html.PagedListPager(
+                Model,
+                page => Url.Action("Index", "Hoa", new
+                {
+                    page,
+                    q = Request.QueryString["q"],
+                    maDM = Request.QueryString["maDM"],
+                    maLoaiChinh = Request.QueryString["maLoaiChinh"],
+                    gia = Request.QueryString.GetValues("gia")
+                }),
+                new PagedListRenderOptions
+                {
+
+                    UlElementClasses = new[] { "pagination" },
+                    LiElementClasses = new[] { "page-item" }
+
+
+                }
+            )
+        </div>
+    </div>
+</section>

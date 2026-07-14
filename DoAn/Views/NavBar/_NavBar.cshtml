@@ -1,0 +1,151 @@
+﻿@using DoAn.Models
+@model IEnumerable<DanhMucMenuViewModel>
+
+<style>
+    /* --- CSS CHO NAVBAR MƯỢT MÀ (Giữ nguyên như cũ) --- */
+    .nav-item .nav-link {
+        color: #4a4a4a !important;
+        font-weight: 600;
+        font-size: 15px;
+        padding: 10px 20px !important;
+        border-radius: 30px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin: 0 5px;
+    }
+
+    .nav-item .nav-link:hover,
+    .nav-item.show .nav-link {
+        background-color: rgba(236, 72, 153, 0.1);
+        color: #ec4899 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.15);
+    }
+
+    .dropdown-menu {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 15px;
+        margin-top: 15px !important;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        animation: slideUp 0.3s ease forwards;
+        display: none;
+        opacity: 0;
+    }
+
+    .dropdown-menu.show {
+        display: block;
+        opacity: 1;
+    }
+
+    .dropdown-item {
+        border-radius: 10px;
+        padding: 10px 15px;
+        color: #555;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        margin-bottom: 2px;
+    }
+
+    .dropdown-item:hover {
+        background-color: #fff0f5;
+        color: #ec4899;
+        padding-left: 20px;
+    }
+
+    .dropdown-divider {
+        border-top-color: #f0f0f0;
+        margin: 8px 0;
+    }
+
+    .badge-soft {
+        background-color: #f3f4f6;
+        color: #6b7280;
+        font-weight: 500;
+        font-size: 0.75rem;
+        padding: 0.35em 0.65em;
+        border-radius: 6px;
+    }
+
+    @@keyframes slideUp {
+        from { opacity: 0; transform: translateY(15px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .chevron-icon {
+        font-size: 10px;
+        margin-left: 5px;
+        transition: transform 0.3s;
+    }
+
+    .nav-item:hover .chevron-icon {
+        transform: rotate(180deg);
+    }
+</style>
+
+@* --- 1. MỤC TRANG CHỦ (Đứng đầu tiên) --- *@
+<li class="nav-item">
+    <a href="@Url.Action("Index", "Hoa")" class="nav-link">
+        <i class="fas fa-home me-1"></i> Trang chủ
+    </a>
+</li>
+
+@* --- 2. VÒNG LẶP DANH MỤC TỪ DATABASE --- *@
+@if (Model != null)
+{
+    foreach (var dm in Model)
+    {
+        <li class="nav-item dropdown">
+            <a href="@Url.Action("Index", "Hoa", new { maDM = dm.MaDM })"
+               class="nav-link"
+               id="navbarDropdown_@dm.MaDM"
+               role="button"
+               data-bs-toggle="dropdown"
+               aria-expanded="false">
+                @dm.TenDM
+                <i class="fas fa-chevron-down chevron-icon"></i>
+            </a>
+
+            @if (dm.LoaiHoaList != null && dm.LoaiHoaList.Any())
+            {
+                <ul class="dropdown-menu" aria-labelledby="navbarDropdown_@dm.MaDM">
+                    <li>
+                        <a href="@Url.Action("Index", "Hoa", new { maDM = dm.MaDM })"
+                           class="dropdown-item fw-bold text-pink">
+                            <i class="fas fa-th-large me-2"></i>Xem tất cả @dm.TenDM
+                        </a>
+                    </li>
+
+                    <li><hr class="dropdown-divider"></li>
+
+                    @foreach (var loai in dm.LoaiHoaList)
+                    {
+                        <li>
+                            <a href="@Url.Action("Index", "Hoa", new { maDM = dm.MaDM, maLoaiChinh = loai.MaLoaiChinh })"
+                               class="dropdown-item d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="fas fa-angle-right me-2 text-secondary" style="font-size: 12px;"></i>
+                                    @loai.TenLoaiChinh
+                                </span>
+                                <span class="badge-soft">@loai.SoLuongSanPham</span>
+                            </a>
+                        </li>
+                    }
+                </ul>
+            }
+        </li>
+    }
+}
+
+@* --- 3. CÁC MỤC TĨNH KHÁC (Đứng cuối cùng) --- *@
+
+<li class="nav-item">
+    <a href="@Url.Action("Index", "VeChungToi")" class="nav-link">Giới thiệu</a>
+</li>
+
+<li class="nav-item">
+    <a href="@Url.Action("Index", "LienHe")" class="nav-link">
+        <i class="fas fa-envelope me-1"></i> Liên hệ
+    </a>
+</li>

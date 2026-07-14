@@ -1,0 +1,246 @@
+﻿@model List<tblDanhMucHoa>
+
+<style>
+    /* --- CSS GLASSMORPHISM CHO SIDEBAR --- */
+    .sidebar-glass {
+        background: rgba(255, 255, 255, 0.65); /* Màu trắng trong suốt */
+        backdrop-filter: blur(12px); /* Hiệu ứng làm mờ nền sau */
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.5); /* Viền mờ */
+        border-radius: 20px; /* Bo góc mềm mại */
+        padding: 25px;
+        box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.1); /* Đổ bóng hồng nhẹ */
+        margin-bottom: 30px;
+    }
+
+        /* Tiêu đề danh mục */
+        .sidebar-glass h3 {
+            color: #ec4899; /* Màu hồng chủ đạo */
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px dashed rgba(236, 72, 153, 0.3); /* Đường kẻ đứt nét cute */
+        }
+
+    /* Style cho danh sách link (Category List) */
+    .category-list {
+        list-style: none;
+        padding: 0;
+        margin-bottom: 25px;
+    }
+
+        .category-list li {
+            margin-bottom: 8px;
+        }
+
+            .category-list li a {
+                display: block;
+                padding: 10px 15px;
+                color: #555;
+                text-decoration: none;
+                background: rgba(255, 255, 255, 0.5); /* Nền nhẹ cho từng mục */
+                border-radius: 12px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                font-weight: 500;
+                border: 1px solid transparent;
+            }
+
+                /* Hover vào mục danh mục */
+                .category-list li a:hover {
+                    background: white;
+                    color: #ec4899;
+                    transform: translateX(5px); /* Trượt nhẹ sang phải */
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+                    border-color: rgba(236, 72, 153, 0.3);
+                }
+
+    /* Style cho Form tìm kiếm nâng cao */
+    .sidebar-glass .form-control,
+    .sidebar-glass .form-select {
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid rgba(0,0,0,0.1);
+        border-radius: 10px;
+        padding: 10px;
+    }
+
+        .sidebar-glass .form-control:focus,
+        .sidebar-glass .form-select:focus {
+            border-color: #ec4899;
+            box-shadow: 0 0 0 0.25rem rgba(236, 72, 153, 0.25);
+        }
+
+    .sidebar-glass label {
+        font-weight: 600;
+        color: #444;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+
+    /* Checkbox cute hơn */
+    .form-check-input:checked {
+        background-color: #ec4899;
+        border-color: #ec4899;
+    }
+    /* Style cho danh sách xổ xuống (Custom Dropdown) */
+    .glass-dropdown-menu {
+        background: rgba(255, 255, 255, 0.9); /* Nền trắng kính */
+        backdrop-filter: blur(15px); /* Mờ xịn */
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        border-radius: 15px;
+        box-shadow: 0 10px 25px rgba(236, 72, 153, 0.15); /* Bóng hồng nhẹ */
+        padding: 10px;
+        margin-top: 5px;
+        max-height: 300px; /* Giới hạn chiều cao nếu danh sách dài */
+        overflow-y: auto; /* Có thanh cuộn nếu dài quá */
+    }
+
+    /* Style từng mục trong danh sách */
+    .glass-dropdown-item {
+        padding: 10px 15px;
+        border-radius: 10px;
+        color: #555;
+        transition: all 0.2s;
+        cursor: pointer;
+        display: block;
+        text-decoration: none;
+    }
+
+        .glass-dropdown-item:hover {
+            background-color: #fff0f5; /* Hover màu hồng phấn */
+            color: #ec4899;
+            transform: translateX(5px);
+        }
+
+    /* Tùy chỉnh thanh cuộn cho đẹp */
+    .glass-dropdown-menu::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .glass-dropdown-menu::-webkit-scrollbar-thumb {
+        background-color: rgba(236, 72, 153, 0.3);
+        border-radius: 10px;
+    }
+</style>
+
+<aside class="sidebar-glass">
+
+    @* Gọi các Partial View danh mục *@
+    @Html.Action("_DanhMucTheoLoai", "DanhMuc")
+
+    @Html.Action("_DanhMucTheoHoa", "DanhMuc")
+
+    @* Form tìm kiếm nâng cao *@
+    @using (Html.BeginForm("Index", "Hoa", FormMethod.Get))
+    {
+        <h3 class="fw-bold mt-4">Bộ lọc tìm kiếm</h3>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-search me-1 text-pink"></i> Từ khóa</label>
+            <input type="text" class="form-control" name="q" placeholder="Bạn muốn tìm gì..." value="@Request.QueryString["q"]">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-filter me-1 text-pink"></i> Loại Hoa</label>
+
+            @{
+                // Logic để hiển thị tên loại hoa đang chọn hiện tại
+                var selectedMa = Request.QueryString["maLoaiChinh"];
+                var selectedName = "-- Tất cả --"; // Mặc định
+
+                if (!string.IsNullOrEmpty(selectedMa) && ViewBag.LoaiHoaList != null)
+                {
+                    var listLoai = ViewBag.LoaiHoaList as List<tblLoaiHoaChinh>;
+                    var currentItem = listLoai.FirstOrDefault(x => x.MaLoaiChinh.ToString() == selectedMa);
+                    if (currentItem != null)
+                    {
+                        selectedName = currentItem.TenLoaiChinh;
+                    }
+                }
+            }
+
+            <input type="hidden" name="maLoaiChinh" id="inputMaLoai" value="@selectedMa" />
+
+            <div class="dropdown mb-3">
+                <button class="form-select text-start d-flex justify-content-between align-items-center w-100"
+                        type="button"
+                        id="dropdownMenuButton"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                        style="background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 25px; border: 2px solid rgba(255,255,255,0.8);">
+
+                    <span id="displaySelectedName">@selectedName</span>
+                    <i class="fas fa-chevron-down text-pink small"></i>
+                </button>
+
+                <ul class="dropdown-menu glass-dropdown-menu w-100" aria-labelledby="dropdownMenuButton">
+                    <li>
+                        <a class="glass-dropdown-item" href="javascript:void(0)" onclick="selectItem('', '-- Tất cả --')">
+                            <i class="fas fa-check-circle me-2 text-muted"></i> -- Tất cả --
+                        </a>
+                    </li>
+
+                    @if (ViewBag.LoaiHoaList != null)
+                    {
+                        foreach (var loai in (ViewBag.LoaiHoaList as List<tblLoaiHoaChinh>))
+                        {
+                            <li>
+                                <a class="glass-dropdown-item" href="javascript:void(0)"
+                                   onclick="selectItem('@loai.MaLoaiChinh', '@loai.TenLoaiChinh')">
+                                    <i class="fas fa-flower me-2 text-pink"></i> @loai.TenLoaiChinh
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            </div>
+
+            <script>
+    function selectItem(maLoai, tenLoai) {
+        // 1. Cập nhật giá trị vào input ẩn (để Form biết mà gửi đi)
+        document.getElementById('inputMaLoai').value = maLoai;
+
+        // 2. Cập nhật tên hiển thị trên nút bấm
+        document.getElementById('displaySelectedName').innerText = tenLoai;
+
+        // 3. (Tùy chọn) Đóng màu chữ cho đẹp
+        // Code này giúp style lại nút bấm sau khi chọn nếu cần
+    }
+            </script>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-tag me-1 text-pink"></i> Khoảng giá</label>
+            <div class="d-flex flex-column gap-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gia" value="1" id="gia1">
+                    <label class="form-check-label small" for="gia1">Dưới 400.000đ</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gia" value="2" id="gia2">
+                    <label class="form-check-label small" for="gia2">400.000đ - 1.000.000đ</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gia" value="3" id="gia3">
+                    <label class="form-check-label small" for="gia3">1.000.000đ - 2.000.000đ</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="gia" value="4" id="gia4">
+                    <label class="form-check-label small" for="gia4">Trên 2.000.000đ</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-primary text-white fw-bold py-2" style="background: linear-gradient(45deg, #ec4899, #ff8a80); border:none; border-radius: 10px;">
+                <i class="fas fa-filter me-1"></i> Áp dụng bộ lọc
+            </button>
+            <a href="@Url.Action("Index", "Hoa")" class="btn btn-light text-secondary fw-bold py-2" style="border-radius: 10px;">
+                <i class="fas fa-sync-alt me-1"></i> Xóa bộ lọc
+            </a>
+        </div>
+    }
+
+</aside>

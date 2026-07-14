@@ -1,0 +1,52 @@
+﻿@{
+    ViewBag.Title = "Đăng ký";
+    
+    Layout = "~/Views/Shared/_LayoutAuth.cshtml";
+}
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-5">
+
+                <div class="auth-card">
+                    <h2 class="auth-card-title">Tạo tài khoản</h2>
+
+                    <form action="@Url.Action("DangKy", "TaiKhoan")" method="post">
+                        @Html.AntiForgeryToken()
+
+                        <div class="mb-3">
+                            <label for="fullName" class="form-label fw-semibold">Họ và Tên</label>
+                            <input type="text" class="form-control" id="fullName" name="FullName" placeholder="Nguyễn Văn A" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Email</label>
+                            <input type="email" class="form-control" id="email" name="Email" placeholder="nhap@email.com" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                            <input type="password" class="form-control" id="password" name="Password" placeholder="••••••••" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label fw-semibold">Xác nhận Mật khẩu</label>
+                            <input type="password" class="form-control" id="confirmPassword" name="ConfirmPassword" placeholder="••••••••" required>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 mt-3">Đăng ký</button>
+                    </form>
+
+                    <hr class="my-4">
+
+                    <p class="text-center mb-0">
+                        Đã có tài khoản?
+                        <a href="@Url.Action("DangNhap", "TaiKhoan")" class="form-link fw-bold">Đăng nhập</a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,151 @@
+﻿@{
+    ViewBag.Title = "Liên hệ";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<style>
+    /* --- CSS RIÊNG CHO FORM LIÊN HỆ --- */
+    .contact-glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 25px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.15);
+    }
+
+    /* Input style kính */
+    .glass-input {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border: 1px solid rgba(236, 72, 153, 0.2) !important;
+        border-radius: 0 15px 15px 0 !important; /* Bo góc bên phải */
+        padding: 12px 15px;
+        transition: all 0.3s;
+    }
+
+        .glass-input:focus {
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1) !important;
+            border-color: #ec4899 !important;
+        }
+
+    /* Icon đầu dòng */
+    .input-group-text {
+        background: rgba(236, 72, 153, 0.1);
+        border: 1px solid rgba(236, 72, 153, 0.2);
+        border-right: none;
+        color: #ec4899;
+        border-radius: 15px 0 0 15px !important; /* Bo góc bên trái */
+        width: 45px;
+        justify-content: center;
+    }
+
+    .btn-send-glass {
+        background: linear-gradient(45deg, #ec4899, #ff8a80);
+        border: none;
+        border-radius: 50px;
+        font-weight: bold;
+        color: white;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+        .btn-send-glass:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4);
+            color: white;
+        }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold" style="color: #333;">Liên hệ với chúng tôi</h2>
+        <p class="text-muted">Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ bạn.</p>
+    </div>
+
+    <div class="row g-5">
+        <div class="col-lg-5">
+            <div class="h-100 p-4 rounded-3" style="background: rgba(236, 72, 153, 0.05);">
+                <h4 class="fw-bold mb-4 text-pink"><i class="fas fa-info-circle me-2"></i>Thông tin liên hệ</h4>
+
+                <div class="d-flex mb-4">
+                    <div class="me-3 text-pink fs-4"><i class="fas fa-map-marker-alt"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Địa chỉ</h6>
+                        <p class="text-muted mb-0">123 Đường Hoa, Quận 1, TP. Hồ Chí Minh</p>
+                    </div>
+                </div>
+
+                <div class="d-flex mb-4">
+                    <div class="me-3 text-pink fs-4"><i class="fas fa-phone-alt"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Điện thoại</h6>
+                        <p class="text-muted mb-0">1900-1234 (Hotline)<br>0909.111.222 (Zalo)</p>
+                    </div>
+                </div>
+
+                <div class="d-flex mb-4">
+                    <div class="me-3 text-pink fs-4"><i class="fas fa-envelope"></i></div>
+                    <div>
+                        <h6 class="fw-bold mb-1">Email</h6>
+                        <p class="text-muted mb-0">info@flowershop.vn</p>
+                    </div>
+                </div>
+
+                <h5 class="fw-bold mt-5 mb-3 text-pink"><i class="fas fa-map me-2"></i>Bản đồ</h5>
+                <div class="map-container rounded-3 overflow-hidden shadow-sm" style="height: 200px;">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.424229307436!2d106.69002231480066!3d10.778783292319854!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f385570472f%3A0x1787491df0ed8d6a!2zRGluaCDEkOG7mWMgTOG6rXA!5e0!3m2!1svi!2s!4v1626339943468!5m2!1svi!2s"
+                            width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-7">
+            <div class="contact-glass-card">
+                <h4 class="text-center mb-4 fw-bold text-dark">Gửi tin nhắn</h4>
+
+                @using (Html.BeginForm("GuiLienHe", "LienHe", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold small text-muted ms-2">Họ và tên *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control glass-input" id="HoTen" name="HoTen" placeholder="Nhập tên của bạn" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-bold small text-muted ms-2">Email *</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input type="email" class="form-control glass-input" id="Email" name="Email" placeholder="email@example.com" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted ms-2">Chủ đề</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-tag"></i></span>
+                            <input type="text" class="form-control glass-input" id="ChuDe" name="ChuDe" placeholder="Bạn cần hỗ trợ gì?">
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-muted ms-2">Nội dung tin nhắn *</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-comment-alt"></i></span>
+                            <textarea class="form-control glass-input" id="NoiDung" name="NoiDung" rows="5" required placeholder="Nhập nội dung tin nhắn..."></textarea>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-send-glass w-100 py-3 shadow">
+                        <i class="fas fa-paper-plane me-2"></i> Gửi tin nhắn ngay
+                    </button>
+                }
+            </div>
+        </div>
+    </div>
+</div>

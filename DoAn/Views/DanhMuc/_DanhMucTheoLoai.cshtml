@@ -1,0 +1,11 @@
+﻿@model List<tblDanhMucHoa>
+<h3 class="fw-bold">Danh mục</h3>
+<ul class="category-list">
+    <li><a href="@Url.Action("Index","Hoa")">Tất cả</a></li>
+    @foreach (var item in Model)
+    {
+        <li><a href="@Url.Action("Index","Hoa",new { maDM = @item.MaDM })">@item.TenDM</a></li>
+    }
+
+
+</ul>

@@ -1,0 +1,168 @@
+﻿@model List<DoAn.tblLoaiHoaChinh>
+@{
+    ViewBag.Title = "Quản lý Loại hoa";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 fw-bold text-dark">@ViewBag.Title</h2>
+    <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="fas fa-plus me-2"></i> Thêm loại hoa
+    </button>
+</div>
+
+<div class="admin-glass-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã Loại</th>
+                    <th>Tên Loại hoa</th>
+                    <th>Mô tả</th>
+                    <th class="text-end" style="width: 150px;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="text-muted">#@item.MaLoaiChinh</td>
+                        <td class="fw-bold text-primary">@item.TenLoaiChinh</td>
+                        <td class="text-muted">@item.MoTa</td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary border-0 rounded-circle"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#editModal"
+                                    data-maloai="@item.MaLoaiChinh"
+                                    data-tenloai="@item.TenLoaiChinh"
+                                    data-mota="@item.MoTa">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#deleteModal"
+                                    data-maloai="@item.MaLoaiChinh"
+                                    data-tenloai="@item.TenLoaiChinh">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-pink"><i class="fas fa-plus-circle me-2"></i>Thêm Loại hoa mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("ThemLoaiHoa", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Tên loại hoa</label>
+                        <input type="text" class="form-control rounded-3" name="TenLoai_Add" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Mô tả</label>
+                        <textarea class="form-control rounded-3" name="MoTa_Add" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="fas fa-edit me-2"></i>Cập nhật Loại hoa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("SuaLoaiHoa", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <input type="hidden" name="MaLoai_Edit" id="edit-maloai" />
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Tên loại hoa</label>
+                        <input type="text" class="form-control rounded-3" name="TenLoai_Edit" id="edit-tenloai" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Mô tả</label>
+                        <textarea class="form-control rounded-3" name="MoTa_Edit" id="edit-mota" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu thay đổi</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-danger">Xóa Loại hoa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("XoaLoaiHoa", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-body text-center py-4">
+                    <input type="hidden" name="MaLoai_Delete" id="delete-maloai" />
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="mb-0">Bạn có chắc muốn xóa loại hoa <strong id="delete-tenloai" class="text-dark"></strong>?</p>
+                    <p class="text-muted small">Nếu có sản phẩm thuộc loại này, bạn sẽ không thể xóa.</p>
+                </div>
+                <div class="modal-footer border-top-0 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Xóa ngay</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Xử lý Modal Sửa
+        var editModal = document.getElementById('editModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            // Lấy dữ liệu từ nút bấm
+            var maLoai = button.getAttribute('data-maloai');
+            var tenLoai = button.getAttribute('data-tenloai');
+            var moTa = button.getAttribute('data-mota');
+
+            // Gán vào form modal
+            editModal.querySelector('#edit-maloai').value = maLoai;
+            editModal.querySelector('#edit-tenloai').value = tenLoai;
+            editModal.querySelector('#edit-mota').value = moTa;
+        });
+
+        // Xử lý Modal Xóa
+        var deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            var maLoai = button.getAttribute('data-maloai');
+            var tenLoai = button.getAttribute('data-tenloai');
+
+            deleteModal.querySelector('#delete-maloai').value = maLoai;
+            deleteModal.querySelector('#delete-tenloai').innerText = tenLoai;
+        });
+    });
+</script>

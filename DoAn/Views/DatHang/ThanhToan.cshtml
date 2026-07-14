@@ -1,0 +1,248 @@
+﻿@model List<DoAn.Models.GioHang>
+@{
+    ViewBag.Title = "Thanh Toán";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+    var kh = ViewBag.KhachHang as DoAn.tblKhachHang;
+}
+
+<style>
+    /* --- GLASS STYLE CHO TRANG THANH TOÁN --- */
+    .glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 25px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.1);
+        height: 100%;
+    }
+
+    /* Input và Textarea trong suốt */
+    .form-control {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border: 1px solid rgba(236, 72, 153, 0.2) !important;
+        border-radius: 15px !important;
+        padding: 12px 15px;
+        transition: all 0.3s;
+    }
+
+        .form-control:focus {
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1) !important;
+            border-color: #ec4899 !important;
+        }
+
+    /* Radio button container */
+    .radio-card {
+        background: rgba(255,255,255,0.4);
+        border: 1px solid transparent;
+        border-radius: 15px;
+        padding: 10px 15px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+    }
+
+        .radio-card:hover, .radio-card.active {
+            background: rgba(236, 72, 153, 0.05);
+            border-color: rgba(236, 72, 153, 0.3);
+        }
+
+    .form-check-input:checked {
+        background-color: #ec4899;
+        border-color: #ec4899;
+    }
+
+    /* Nút đặt hàng */
+    .btn-place-order {
+        background: linear-gradient(45deg, #ec4899, #ff8a80);
+        border: none;
+        border-radius: 50px;
+        padding: 15px;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: white;
+        width: 100%;
+        box-shadow: 0 5px 15px rgba(236, 72, 153, 0.4);
+        transition: transform 0.2s;
+    }
+
+        .btn-place-order:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+
+    /* List sản phẩm bên phải */
+    .summary-item {
+        border-bottom: 1px dashed rgba(0,0,0,0.1);
+        padding-bottom: 10px;
+        margin-bottom: 10px;
+    }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+</style>
+
+<div class="container my-5">
+    <h2 class="text-center fw-bold mb-5" style="color: #444;">Xác Nhận Thanh Toán</h2>
+
+    @if (TempData["ThongBao"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-pill mb-4 shadow-sm" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["ThongBao"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @using (Html.BeginForm("XacNhanDatHang", "DatHang", FormMethod.Post))
+    {
+        @Html.AntiForgeryToken()
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+                <div class="glass-card">
+                    <h4 class="fw-bold mb-4 text-pink"><i class="fas fa-shipping-fast me-2"></i>Thông tin người nhận</h4>
+
+                    @if (kh != null)
+                    {
+                        <div class="mb-4">
+                            <label class="radio-card">
+                                <input class="form-check-input me-3" type="radio" name="DiaChiLuaChon" id="dia-chi-cu" value="cu" checked>
+                                <span class="fw-semibold">Giao đến địa chỉ đã lưu</span>
+                            </label>
+                            <label class="radio-card">
+                                <input class="form-check-input me-3" type="radio" name="DiaChiLuaChon" id="dia-chi-moi" value="moi">
+                                <span class="fw-semibold">Giao đến địa chỉ mới</span>
+                            </label>
+                        </div>
+                    }
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Họ và tên *</label>
+                            <input type="text" class="form-control" id="HoTen" name="TenKH" value="@(kh != null ? kh.TenKH : "")" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Số điện thoại *</label>
+                            <input type="tel" class="form-control" id="DienThoai" name="DienThoai" value="@(kh != null ? kh.DienThoai : "")" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Email *</label>
+                            <input type="email" class="form-control" id="Email" name="Email" value="@(kh != null ? kh.Email : "")" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Địa chỉ nhận hàng *</label>
+                            <textarea class="form-control" id="DiaChi" name="DiaChi" rows="3" required>@(kh != null ? kh.DiaChi : "")</textarea>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Ghi chú (Tùy chọn)</label>
+                            <textarea class="form-control" id="GhiChu" name="GhiChu" rows="2" placeholder="VD: Giao giờ hành chính, gọi trước khi giao..."></textarea>
+                        </div>
+                    </div>
+
+                    <hr class="my-4 text-muted opacity-25">
+
+                    <h4 class="fw-bold mb-3 text-pink"><i class="far fa-credit-card me-2"></i>Phương thức thanh toán</h4>
+
+                    <label class="radio-card">
+                        <input class="form-check-input me-3" type="radio" name="PhuongThucThanhToan" id="pttt-cod" value="COD" checked>
+                        <span>
+                            <span class="d-block fw-bold">Thanh toán khi nhận hàng (COD)</span>
+                            <span class="small text-muted">Bạn sẽ thanh toán tiền mặt cho shipper khi nhận được hoa.</span>
+                        </span>
+                    </label>
+
+                    <label class="radio-card">
+                        <input class="form-check-input me-3" type="radio" name="PhuongThucThanhToan" id="pttt-qr" value="QR">
+                        <span>
+                            <span class="d-block fw-bold">Chuyển khoản / Quét mã QR</span>
+                            <span class="small text-muted">Thanh toán nhanh chóng qua ứng dụng ngân hàng.</span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="glass-card position-sticky" style="top: 100px;">
+                    <h4 class="fw-bold mb-4 text-pink">Đơn hàng của bạn (@Model.Count)</h4>
+
+                    <div style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                        @foreach (var item in Model)
+                        {
+                            <div class="summary-item d-flex align-items-center">
+                                <img src="@Url.Content("~/Content/HinhAnh/" + item.sAnhDaiDien)"
+                                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 10px; margin-right: 15px;">
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold text-dark small">@item.sTenHoa</div>
+                                    <small class="text-muted">x @item.iSoLuong</small>
+                                </div>
+                                <div class="fw-bold text-pink">@item.dThanhTien.ToString("N0")₫</div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Tạm tính:</span>
+                            <span class="fw-semibold">@ViewBag.TongTien.ToString("N0") ₫</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Phí vận chuyển:</span>
+                            <span class="text-success fw-bold">Miễn phí</span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                            <span class="h5 fw-bold mb-0">Tổng cộng:</span>
+                            <span class="h4 fw-bold text-pink mb-0">@ViewBag.TongTien.ToString("N0") ₫</span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-place-order mt-4">
+                        Hoàn Tất Đặt Hàng <i class="fas fa-arrow-right ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // Xử lý logic chọn địa chỉ cũ/mới
+            var radioCu = document.getElementById('dia-chi-cu');
+            var radioMoi = document.getElementById('dia-chi-moi');
+            var inputHoTen = document.getElementById('HoTen');
+            var inputEmail = document.getElementById('Email');
+            var inputDienThoai = document.getElementById('DienThoai');
+            var inputDiaChi = document.getElementById('DiaChi');
+
+            if (radioCu && radioMoi) {
+                // Lưu data gốc
+                var savedData = {
+                    hoTen: inputHoTen.value,
+                    email: inputEmail.value,
+                    dienThoai: inputDienThoai.value,
+                    diaChi: inputDiaChi.value
+                };
+
+                radioMoi.addEventListener('click', function () {
+                    inputHoTen.value = "";
+                    inputEmail.value = "";
+                    inputDienThoai.value = "";
+                    inputDiaChi.value = "";
+                    inputDiaChi.focus();
+                });
+
+                radioCu.addEventListener('click', function () {
+                    inputHoTen.value = savedData.hoTen;
+                    inputEmail.value = savedData.email;
+                    inputDienThoai.value = savedData.dienThoai;
+                    inputDiaChi.value = savedData.diaChi;
+                });
+            }
+        });
+    </script>
+}

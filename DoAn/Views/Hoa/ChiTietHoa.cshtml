@@ -1,0 +1,498 @@
+﻿@model DoAn.tblHoa
+@{
+    ViewBag.Title = Model.TenHoa;
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+
+    var splq = (List<tblHoa>)ViewBag.HoaCungLoai;
+    var gallery = (List<tblHinhAnh>)ViewBag.HinhAnhGallery;
+    var binhluans = (List<BinhLuan>)ViewBag.BinhLuan;
+}
+
+
+
+<div class="container mt-5 mb-5">
+    <div class="product-glass-card">
+        <div class="row">
+            <div class="col-lg-5">
+                <div class="main-img-container mb-3">
+                    <img id="main-image" src="~/Content/HinhAnh/@Model.AnhDaiDien" alt="@Model.TenHoa" class="img-fluid w-100" />
+                </div>
+
+                @if (gallery != null && gallery.Any())
+                {
+                    <div class="d-flex gap-2 overflow-auto pb-2 justify-content-center">
+                        <div class="thumbnail-item active" style="width: 70px;">
+                            <img src="~/Content/HinhAnh/@Model.AnhDaiDien" alt="Thumbnail" class="img-fluid rounded" />
+                        </div>
+                        @foreach (var img in gallery)
+                        {
+                            <div class="thumbnail-item" style="width: 70px;">
+                                <img src="~/Content/HinhAnh/@img.HinhAnh" alt="Thumbnail" class="img-fluid rounded" />
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-7 ps-lg-5">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb small text-muted bg-transparent p-0 mb-2">
+                        <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-secondary">Trang chủ</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@Model.TenHoa</li>
+                    </ol>
+                </nav>
+
+                <h2 class="product-title mb-3">@Model.TenHoa</h2>
+
+                <div class="d-flex align-items-center mb-3">
+                    <p class="product-price mb-0 me-3">
+                        @string.Format("{0:#,##0} VNĐ", Model.GiaBan)
+                    </p>
+                    <span class="badge rounded-pill bg-pink-light text-pink border border-pink">
+                        <i class="fas fa-check-circle me-1"></i> Còn hàng
+                    </span>
+                </div>
+
+                <div class="mb-4 text-secondary">
+                    <p class="mb-1"><i class="fas fa-palette me-2 text-pink"></i>Màu sắc: <b>@Model.MauSacChuDao</b></p>
+                    <p class="mb-1"><i class="fas fa-cube me-2 text-pink"></i>Đơn vị: <b>@Model.DonViTinh</b></p>
+                </div>
+
+                <div class="product-description mb-4 p-3 bg-white bg-opacity-50 rounded-3">
+                    @Html.Raw(Model.MoTa)
+                </div>
+
+                <hr class="text-muted opacity-25">
+
+                @using (Html.BeginForm("ThemGioHangChiTiet", "GioHang", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.Hidden("MaHoa", Model.MaHoa)
+
+                    <div class="d-flex align-items-center flex-wrap gap-3 mb-3">
+                        <div class="quantity-pill">
+                            <button type="button" class="btn-qty" onclick="DoiSoLuong(-1)">
+                                <i class="fas fa-minus small"></i>
+                            </button>
+
+                            <input type="number" value="1" min="1" name="SoLuong" id="quantityInput">
+
+                            <button type="button" class="btn-qty" onclick="DoiSoLuong(1)">
+                                <i class="fas fa-plus small"></i>
+                            </button>
+                        </div>
+
+                        <button type="submit" class="btn-add-cart flex-grow-1">
+                            <i class="fas fa-cart-plus me-2"></i> Thêm vào giỏ ngay
+                        </button>
+                    </div>
+
+                    <a href="@Url.Action("Index", "Hoa")" class="text-decoration-none text-muted small">
+                        <i class="fas fa-arrow-left me-1"></i> Tiếp tục mua sắm
+                    </a>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-12">
+            <ul class="nav nav-tabs justify-content-center" id="productTabs" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="reviews-tab" data-bs-toggle="tab" data-bs-target="#reviews" type="button">
+                        <i class="fas fa-comments me-2"></i>Đánh giá & Bình luận (@(binhluans != null ? binhluans.Count : 0))
+                    </button>
+                </li>
+            </ul>
+
+            <div class="tab-content tab-content-glass" id="productTabsContent">
+                <div class="tab-pane fade show active" id="reviews">
+                    <div class="review-scroll-container">
+                    @if (binhluans != null && binhluans.Any())
+                    {
+                        foreach (var bl in binhluans)
+                        {
+                            <div class="comment-item mb-3 pb-3 border-bottom border-light">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="avatar-circle me-2 bg-pink text-white rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px;">
+                                        @bl.HoTen.Substring(0, 1)
+                                    </div>
+                                    <div>
+                                        <strong class="d-block text-dark">@bl.HoTen</strong>
+                                        <div class="small text-warning">
+                                            @for (int i = 0; i < bl.SoSao; i++)
+                                            {<i class="fas fa-star"></i>}
+                                            @for (int i = 0; i < (5 - bl.SoSao); i++)
+                                            {<i class="far fa-star"></i>}
+                                        </div>
+                                    </div>
+                                    <small class="text-muted ms-auto">@bl.Ngay.ToString("dd/MM/yyyy")</small>
+                                </div>
+                                <p class="mb-0 text-secondary ms-5">@bl.NoiDung</p>
+                            </div>
+                        }
+                    }
+                    
+                    else
+                    {
+                        <div class="text-center py-4 text-muted">
+                            <i class="far fa-comment-dots fa-3x mb-3 opacity-50"></i>
+                            <p>Chưa có đánh giá nào. Hãy là người đầu tiên!</p>
+                        </div>
+                    }
+                    </div>
+                <div class="mt-4 p-4 rounded-3 bg-white bg-opacity-50 border border-white">
+                    <h5 class="fw-bold text-pink mb-3">Gửi đánh giá của bạn</h5>
+
+                    @if (Session["MaKH"] != null)
+                    {
+                        using (Html.BeginForm("ThemBinhLuan", "Hoa", FormMethod.Post))
+                        {
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden" name="MaHoa" value="@Model.MaHoa" />
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Đánh giá sao</label>
+
+                                <input type="hidden" name="SoSao" id="ratingInput" value="5" />
+
+                                <div class="dropdown">
+                                    <button class="form-select text-start d-flex justify-content-between align-items-center w-100"
+                                            type="button" id="ratingDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false"
+                                            style="background: rgba(255,255,255,0.6); backdrop-filter: blur(10px); border-radius: 25px; border: 2px solid rgba(255,255,255,0.8); height: 45px;">
+                                        <span id="ratingDisplay">5 sao - Tuyệt vời 😍</span>
+                                        <i class="fas fa-chevron-down text-pink small"></i>
+                                    </button>
+
+                                    <ul class="dropdown-menu w-100 border-0 shadow-lg p-2"
+                                        style="border-radius: 15px; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(15px); margin-top: 5px;">
+                                        <li><a class="dropdown-item rounded py-2 mb-1" href="javascript:void(0)" onclick="selectRating(5, '5 sao - Tuyệt vời 😍')">5 sao - Tuyệt vời 😍</a></li>
+                                        <li><a class="dropdown-item rounded py-2 mb-1" href="javascript:void(0)" onclick="selectRating(4, '4 sao - Rất tốt 😊')">4 sao - Rất tốt 😊</a></li>
+                                        <li><a class="dropdown-item rounded py-2 mb-1" href="javascript:void(0)" onclick="selectRating(3, '3 sao - Bình thường 🙂')">3 sao - Bình thường 🙂</a></li>
+                                        <li><a class="dropdown-item rounded py-2 mb-1" href="javascript:void(0)" onclick="selectRating(2, '2 sao - Tạm được 😐')">2 sao - Tạm được 😐</a></li>
+                                        <li><a class="dropdown-item rounded py-2 mb-1" href="javascript:void(0)" onclick="selectRating(1, '1 sao - Không thích 😞')">1 sao - Không thích 😞</a></li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold small text-muted">Nội dung</label>
+                                <textarea class="form-control" name="NoiDung" rows="3" required placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."></textarea>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary"
+                                    style="background-color: #ec4899; border:none; border-radius: 50px; padding: 8px 25px; box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3);">
+                                <i class="fas fa-paper-plane me-2"></i>Gửi đánh giá
+                            </button>
+                        }
+                    }
+                    else
+                    {
+                        // Nếu chưa đăng nhập thì hiện nút bắt đăng nhập
+                        <div class="text-center py-3">
+                            <p class="text-muted mb-3">Vui lòng đăng nhập để gửi đánh giá.</p>
+                            <a href="@Url.Action("DangNhap", "TaiKhoan", new { url = Request.Url.ToString() })"
+                               class="btn btn-outline-primary rounded-pill px-4">
+                                <i class="fas fa-sign-in-alt me-2"></i>Đăng nhập ngay
+                            </a>
+                        </div>
+                    }
+                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (splq != null && splq.Any())
+    {
+        <div class="mt-5">
+            <h3 class="fw-bold mb-4 text-center" style="color: #444;">Có thể bạn cũng thích</h3>
+            <div class="row g-4">
+                @foreach (var item in splq)
+                {
+                    <div class="col-6 col-md-4 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm" style="border-radius: 20px; overflow: hidden; transition: transform 0.3s;">
+                            <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.MaHoa })">
+                                <img src="~/Content/HinhAnh/@item.AnhDaiDien" class="card-img-top" alt="@item.TenHoa" style="height: 200px; object-fit: cover;">
+                            </a>
+                            <div class="card-body text-center">
+                                <h6 class="card-title fw-bold">
+                                    <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.MaHoa })" class="text-decoration-none text-dark">
+                                        @item.TenHoa
+                                    </a>
+                                </h6>
+                                <p class="card-text text-pink fw-bold">@string.Format("{0:#,##0} VNĐ", item.GiaBan)</p>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+    </div>
+
+
+<style>
+    /* --- CSS RIÊNG CHO TRANG CHI TIẾT (GLASS STYLE) --- */
+
+    /* 1. Khối bao quanh sản phẩm (Glass Card) */
+    .product-glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 30px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.1);
+    }
+
+    /* 2. Ảnh sản phẩm */
+    .main-img-container img {
+        border-radius: 20px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transition: transform 0.3s ease;
+    }
+
+        .main-img-container img:hover {
+            transform: scale(1.02);
+        }
+
+    .thumbnail-item img {
+        border-radius: 10px;
+        cursor: pointer;
+        opacity: 0.7;
+        transition: all 0.2s;
+        border: 2px solid transparent;
+    }
+
+        .thumbnail-item img:hover, .thumbnail-item.active img {
+            opacity: 1;
+            border-color: #ec4899;
+            transform: translateY(-2px);
+        }
+
+    /* 3. Thông tin chữ */
+    .product-title {
+        font-weight: 800;
+        color: #333;
+        letter-spacing: -0.5px;
+    }
+
+    .product-price {
+        font-size: 1.8rem;
+        color: #ec4899;
+        font-weight: 700;
+        text-shadow: 0 2px 10px rgba(236, 72, 153, 0.2);
+    }
+
+    /* 4. Bộ chọn số lượng hình viên thuốc */
+    .quantity-pill {
+        background: rgba(255, 255, 255, 0.5);
+        border: 2px solid #ec4899;
+        border-radius: 50px;
+        padding: 5px;
+        display: flex;
+        align-items: center;
+        width: fit-content;
+    }
+
+        .quantity-pill .btn-qty {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: #ec4899;
+            font-weight: bold;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+            .quantity-pill .btn-qty:hover {
+                background: #ec4899;
+                color: white;
+            }
+
+        .quantity-pill input {
+            border: none;
+            background: transparent;
+            width: 50px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+            .quantity-pill input:focus {
+                outline: none;
+                box-shadow: none;
+            }
+
+    /* 5. Nút thêm giỏ hàng */
+    .btn-add-cart {
+        background: linear-gradient(45deg, #ec4899, #ff8a80);
+        border: none;
+        border-radius: 50px;
+        padding: 12px 30px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+        transition: all 0.3s;
+    }
+
+        .btn-add-cart:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(236, 72, 153, 0.6);
+            color: white;
+        }
+
+    /* 6. Tabs bình luận */
+    .nav-tabs {
+        border-bottom: none;
+        gap: 10px;
+    }
+
+        .nav-tabs .nav-link {
+            border: none;
+            background: rgba(255,255,255,0.5);
+            border-radius: 20px;
+            color: #666;
+            font-weight: 600;
+            padding: 10px 25px;
+        }
+
+            /* --- SỬA LẠI TAB BÌNH LUẬN CHO DỊU MẮT --- */
+            .nav-tabs .nav-link.active {
+                background: rgba(236, 72, 153, 0.08) !important; /* Nền hồng phấn siêu nhạt (8%) */
+                color: #ec4899 !important; /* Chữ giữ màu hồng đậm cho dễ đọc */
+                border: 1px solid rgba(236, 72, 153, 0.3) !important; /* Viền hồng mỏng manh */
+                box-shadow: 0 4px 15px rgba(236, 72, 153, 0.1) !important; /* Bóng đổ nhẹ nhàng hơn */
+            }
+
+            /* Khi rê chuột vào thì đậm hơn xíu xiu thôi */
+            .nav-tabs .nav-link:hover {
+                background: rgba(236, 72, 153, 0.15) !important;
+                color: #db2777 !important; /* Hồng đậm hơn chút */
+            }
+
+    .tab-content-glass {
+        background: rgba(255, 255, 255, 0.6);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 25px;
+        margin-top: 15px;
+        border: 1px solid rgba(255,255,255,0.5);
+    }
+    /* Style cho mục chọn sao */
+    .dropdown-item {
+        transition: all 0.2s;
+        color: #555;
+    }
+
+        .dropdown-item:hover {
+            background-color: #fff0f5; /* Nền hồng phấn */
+            color: #ec4899; /* Chữ hồng */
+            padding-left: 20px; /* Hiệu ứng trượt chữ */
+        }
+
+    /* --- THANH CUỘN CHO BÌNH LUẬN --- */
+    .review-scroll-container {
+        max-height: 400px; /* Chiều cao tối đa (tầm 3-4 comment) */
+        overflow-y: auto; /* Tự động hiện thanh cuộn khi dài quá */
+        padding-right: 10px; /* Chừa chỗ cho thanh cuộn */
+        margin-bottom: 20px;
+    }
+
+        /* Trang trí thanh cuộn màu hồng mảnh mai */
+        .review-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .review-scroll-container::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+            border-radius: 10px;
+        }
+
+        .review-scroll-container::-webkit-scrollbar-thumb {
+            background: rgba(236, 72, 153, 0.4); /* Màu hồng kính */
+            border-radius: 10px;
+        }
+
+            .review-scroll-container::-webkit-scrollbar-thumb:hover {
+                background: #ec4899; /* Đậm lên khi di chuột vào */
+            }
+</style>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // --- Code xử lý thumbnail ảnh (Giữ nguyên) ---
+        var thumbnails = document.querySelectorAll('.thumbnail-item img');
+        var mainImage = document.getElementById('main-image');
+
+        thumbnails.forEach(function (thumb) {
+            thumb.addEventListener('click', function () {
+                document.querySelectorAll('.thumbnail-item').forEach(i => i.classList.remove('active'));
+                this.parentElement.classList.add('active');
+                mainImage.src = this.src;
+            });
+        });
+    });
+
+    // --- HÀM XỬ LÝ SỐ LƯỢNG (Viết tách ra để tránh lỗi trùng lặp) ---
+    function DoiSoLuong(delta) {
+        var qtyInput = document.getElementById('quantityInput');
+        var currentVal = parseInt(qtyInput.value) || 1; // Nếu lỗi thì mặc định là 1
+        var newVal = currentVal + delta;
+
+        if (newVal < 1) newVal = 1; // Không cho nhỏ hơn 1
+
+        qtyInput.value = newVal;
+    }
+
+    // --- HÀM XỬ LÝ CHỌN SAO (Giữ nguyên) ---
+    function selectRating(starValue, textDisplay) {
+        document.getElementById('ratingInput').value = starValue;
+        document.getElementById('ratingDisplay').innerText = textDisplay;
+    }
+</script>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // --- Code cũ xử lý số lượng (Giữ nguyên) ---
+        var qtyInput = document.getElementById('quantityInput');
+        if (qtyInput) {
+            document.getElementById('btn-plus').addEventListener('click', function () {
+                qtyInput.value = parseInt(qtyInput.value) + 1;
+            });
+            document.getElementById('btn-minus').addEventListener('click', function () {
+                var currentVal = parseInt(qtyInput.value);
+                if (currentVal > 1) {
+                    qtyInput.value = currentVal - 1;
+                }
+            });
+        }
+
+        // --- Code cũ xử lý thumbnail ảnh (Giữ nguyên) ---
+        var thumbnails = document.querySelectorAll('.thumbnail-item img');
+        var mainImage = document.getElementById('main-image');
+        thumbnails.forEach(function (thumb) {
+            thumb.addEventListener('click', function () {
+                document.querySelectorAll('.thumbnail-item').forEach(i => i.classList.remove('active'));
+                this.parentElement.classList.add('active');
+                mainImage.src = this.src;
+            });
+        });
+    });
+
+    // --- HÀM MỚI: Xử lý chọn sao ---
+    function selectRating(starValue, textDisplay) {
+        // 1. Cập nhật giá trị vào input ẩn
+        document.getElementById('ratingInput').value = starValue;
+
+        // 2. Cập nhật nội dung hiển thị trên nút bấm
+        document.getElementById('ratingDisplay').innerText = textDisplay;
+    }
+</script>

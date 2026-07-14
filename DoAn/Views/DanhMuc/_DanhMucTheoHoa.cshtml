@@ -1,0 +1,11 @@
+﻿@model List<tblLoaiHoaChinh>
+<h3 class="fw-bold">Loại Hoa Cụ thể</h3>
+<ul class="category-list">
+    
+    @foreach (var item in Model)
+    {
+        <li><a href="@Url.Action("Index", "Hoa", new {maLoaiChinh= @item.MaLoaiChinh})">@item.TenLoaiChinh</a></li>
+    }
+
+
+</ul>

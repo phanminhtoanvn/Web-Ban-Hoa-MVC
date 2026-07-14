@@ -1,0 +1,56 @@
+﻿@{
+    ViewBag.Title = "Quên mật khẩu";
+    Layout = "~/Views/Shared/_LayoutAuth.cshtml";
+}
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="auth-card">
+                    <h2 class="auth-card-title">Khôi phục mật khẩu</h2>
+                    <p class="text-center text-muted mb-4 small">Nhập email của bạn để nhận mật khẩu mới.</p>
+
+                    @if (ViewBag.ThongBao != null)
+                    {
+                        <div class="alert alert-success text-center">@ViewBag.ThongBao</div>
+                        <div class="text-center mt-3">
+                            <a href="@Url.Action("DangNhap", "TaiKhoan")" class="btn btn-outline-success rounded-pill px-4">
+                                <i class="fas fa-sign-in-alt me-2"></i>Quay lại Đăng nhập
+                            </a>
+                        </div>
+                    }
+                    else
+                    {
+                        using (Html.BeginForm("QuenMatKhau", "TaiKhoan", FormMethod.Post))
+                        {
+                            if (ViewBag.Loi != null)
+                            {
+                                <div class="alert alert-danger text-center">@ViewBag.Loi</div>
+                            }
+
+                            <div class="mb-4">
+                                <label class="form-label fw-semibold">Email đăng ký</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-white border-end-0"><i class="fas fa-envelope text-muted"></i></span>
+                                    <input type="email" class="form-control border-start-0 ps-0" name="email" placeholder="nhap@email.com" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 fw-bold py-2">
+                                <i class="fas fa-paper-plane me-2"></i>Gửi mật khẩu mới
+                            </button>
+                        }
+                    }
+
+                    <hr class="my-4">
+                    <div class="text-center">
+                        <a href="@Url.Action("DangNhap", "TaiKhoan")" class="text-decoration-none text-secondary small">
+                            <i class="fas fa-arrow-left me-1"></i> Quay lại
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

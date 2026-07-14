@@ -1,0 +1,259 @@
+﻿@model List<DoAn.tblHoa>
+@{
+    ViewBag.Title = "Quản lý Sản phẩm";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var danhMucList = ViewBag.DanhMucList as List<DoAn.tblDanhMucHoa>;
+    var loaiHoaList = ViewBag.LoaiHoaList as List<DoAn.tblLoaiHoaChinh>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0 fw-bold text-dark">@ViewBag.Title</h2>
+    <button class="btn btn-primary rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+        <i class="fas fa-plus me-2"></i> Thêm sản phẩm
+    </button>
+</div>
+
+<div class="admin-glass-card">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Ảnh</th>
+                    <th>Tên Sản phẩm</th>
+                    <th>Giá bán</th>
+                    <th>Danh mục</th>
+                    <th class="text-end" style="width: 150px;">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                <tr>
+                    <td>
+                        <img src="@Url.Content("~/Content/HinhAnh/" + item.AnhDaiDien)"
+                             class="admin-table-img shadow-sm" alt="img" />
+                    </td>
+                    <td class="fw-semibold text-dark">@item.TenHoa</td>
+                    <td class="text-pink fw-bold">@string.Format("{0:#,##0}", item.GiaBan) ₫</td>
+                    <td>
+                        <span class="badge bg-white text-secondary border">
+                            @(item.tblDanhMucHoa != null ? item.tblDanhMucHoa.TenDM : "---")
+                        </span>
+                    </td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-primary border-0 rounded-circle"
+                                data-bs-toggle="modal"
+                                data-bs-target="#editModal"
+                                data-mahoa="@item.MaHoa"
+                                data-tenhoa="@item.TenHoa"
+                                data-giaban="@item.GiaBan"
+                                data-mota="@item.MoTa"
+                                data-anh="@item.AnhDaiDien"
+                                data-donvitinh="@item.DonViTinh"
+                                data-mausac="@item.MauSacChuDao"
+                                data-madm="@item.MaDM"
+                                data-maloaichinh="@item.MaLoaiChinh">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger border-0 rounded-circle"
+                                data-bs-toggle="modal"
+                                data-bs-target="#deleteModal"
+                                data-mahoa="@item.MaHoa"
+                                data-tenhoa="@item.TenHoa">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-pink"><i class="fas fa-plus-circle me-2"></i>Thêm Sản phẩm mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("ThemSanPham", "Admin", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Tên hoa</label>
+                            <input type="text" class="form-control rounded-3" name="TenHoa_Add" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Giá bán</label>
+                            <input type="number" class="form-control rounded-3" name="GiaBan_Add" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Danh mục</label>
+                            <select class="form-select rounded-3" name="MaDM_Add">
+                                @foreach (var dm in danhMucList)
+                                {
+                                    <option value="@dm.MaDM">@dm.TenDM</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Loại hoa chính</label>
+                            <select class="form-select rounded-3" name="MaLoaiChinh_Add">
+                                @foreach (var l in loaiHoaList)
+                                {
+                                    <option value="@l.MaLoaiChinh">@l.TenLoaiChinh</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Màu sắc</label>
+                            <input type="text" class="form-control rounded-3" name="MauSacChuDao_Add" />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">Đơn vị tính</label>
+                            <input type="text" class="form-control rounded-3" name="DonViTinh_Add" placeholder="Bó, Giỏ, Lẵng..." />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Ảnh đại diện</label>
+                            <input type="file" class="form-control rounded-3" name="AnhDaiDien_Add" required />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Mô tả</label>
+                            <textarea class="form-control rounded-3" name="MoTa_Add" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu sản phẩm</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-primary"><i class="fas fa-edit me-2"></i>Cập nhật Sản phẩm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("SuaSanPham", "Admin", FormMethod.Post, new { enctype = "multipart/form-data" }))
+            {
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="MaHoa_Edit" id="edit-mahoa" />
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Tên hoa</label>
+                                    <input type="text" class="form-control rounded-3" name="TenHoa_Edit" id="edit-tenhoa" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Giá bán</label>
+                                    <input type="number" class="form-control rounded-3" name="GiaBan_Edit" id="edit-giaban" required />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Danh mục</label>
+                                    <select class="form-select rounded-3" name="MaDM_Edit" id="edit-madm">
+                                        @foreach (var dm in danhMucList)
+                                        {
+                                            <option value="@dm.MaDM">@dm.TenDM</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Loại hoa</label>
+                                    <select class="form-select rounded-3" name="MaLoaiChinh_Edit" id="edit-maloaichinh">
+                                        @foreach (var l in loaiHoaList)
+                                        {
+                                            <option value="@l.MaLoaiChinh">@l.TenLoaiChinh</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Màu sắc</label>
+                                    <input type="text" class="form-control rounded-3" name="MauSacChuDao_Edit" id="edit-mausac" />
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label small fw-bold text-muted">Đơn vị</label>
+                                    <input type="text" class="form-control rounded-3" name="DonViTinh_Edit" id="edit-donvitinh" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <label class="form-label small fw-bold text-muted d-block">Ảnh hiện tại</label>
+                            <img id="edit-anh-preview" src="" class="img-thumbnail rounded-3 shadow-sm mb-2" style="max-height: 150px;">
+                            <input type="file" class="form-control form-control-sm rounded-3" name="AnhDaiDien_Edit" />
+                            <small class="text-muted fst-italic">Bỏ qua nếu không đổi ảnh</small>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small fw-bold text-muted">Mô tả</label>
+                            <textarea class="form-control rounded-3" name="MoTa_Edit" id="edit-mota" rows="3"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4">Lưu thay đổi</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0">
+            <div class="modal-header border-bottom-0">
+                <h5 class="modal-title fw-bold text-danger">Xác nhận xóa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            @using (Html.BeginForm("XoaSanPham", "Admin", FormMethod.Post))
+            {
+                @Html.AntiForgeryToken()
+                <div class="modal-body text-center py-4">
+                    <input type="hidden" name="MaHoa_Delete" id="delete-mahoa" />
+                    <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
+                    <p class="mb-0">Bạn có chắc chắn muốn xóa sản phẩm <strong id="delete-tenhoa" class="text-dark"></strong> không?</p>
+                    <p class="text-muted small">Hành động này không thể hoàn tác.</p>
+                </div>
+                <div class="modal-footer border-top-0 justify-content-center">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4">Xóa ngay</button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var editModal = document.getElementById('editModal');
+        editModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            // Gán dữ liệu vào form sửa
+            editModal.querySelector('#edit-mahoa').value = button.getAttribute('data-mahoa');
+            editModal.querySelector('#edit-tenhoa').value = button.getAttribute('data-tenhoa');
+            editModal.querySelector('#edit-giaban').value = button.getAttribute('data-giaban').replace('.00', '');
+            editModal.querySelector('#edit-mota').value = button.getAttribute('data-mota');
+            editModal.querySelector('#edit-donvitinh').value = button.getAttribute('data-donvitinh');
+            editModal.querySelector('#edit-mausac').value = button.getAttribute('data-mausac');
+            editModal.querySelector('#edit-madm').value = button.getAttribute('data-madm');
+            editModal.querySelector('#edit-maloaichinh').value = button.getAttribute('data-maloaichinh');
+            editModal.querySelector('#edit-anh-preview').src = '@Url.Content("~/Content/HinhAnh/")' + button.getAttribute('data-anh');
+        });
+
+        var deleteModal = document.getElementById('deleteModal');
+        deleteModal.addEventListener('show.bs.modal', function (event) {
+            var button = event.relatedTarget;
+            deleteModal.querySelector('#delete-mahoa').value = button.getAttribute('data-mahoa');
+            deleteModal.querySelector('#delete-tenhoa').innerText = button.getAttribute('data-tenhoa');
+        });
+    });
+</script>

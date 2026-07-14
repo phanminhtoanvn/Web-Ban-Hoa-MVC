@@ -1,0 +1,39 @@
+﻿@model List<tblKhachHang>
+@{
+    ViewBag.Title = "Danh sách Khách hàng";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<h2 class="mb-4">@ViewBag.Title</h2>
+
+<div class="admin-glass-card">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>Mã KH</th>
+                <th>Tên Khách hàng</th>
+                <th>Email</th>
+                <th>Điện thoại</th>
+                <th>Địa chỉ</th>
+                <th>Năm sinh</th>
+                <th class="text-end">Tổng số đơn</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td class="fw-semibold">@item.MaKH</td>
+                    <td>@item.TenKH</td>
+                    <td>@item.Email</td>
+                    <td>@item.DienThoai</td>
+                    <td>@item.DiaChi</td>
+                    <td>@item.NamSinh</td>
+                    <td class="text-end">
+                        @item.tblHoaDon.Count()
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,56 @@
+﻿@{
+    ViewBag.Title = "Đăng nhập";
+    
+    Layout = "~/Views/Shared/_LayoutAuth.cshtml";
+}
+
+<div class="auth-container">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-7 col-lg-5">
+                @if (ViewBag.ThongBao != null)
+                {
+                    <div class="alert alert-success text-center fw-bold">
+                        <i class="fas fa-check-circle me-2"></i>@ViewBag.ThongBao
+                    </div>
+                }
+                <div class="auth-card">
+                    <h2 class="auth-card-title">Đăng nhập</h2>
+
+                    @using (Html.BeginForm("XuLyDangNhap", "TaiKhoan", new { url = ViewBag.URL }, FormMethod.Post))
+                    {
+                        @Html.ValidationSummary(true, "", new { @class = "text-danger mb-3 fw-bold" })
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">Email</label>
+                            <input type="email" class="form-control" id="email" name="Email" placeholder="nhap@email.com" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="password" class="form-label fw-semibold">Mật khẩu</label>
+                            <input type="password" class="form-control" id="password" name="Password" placeholder="        " required>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="rememberMe" name="RememberMe">
+                                <label class="form-check-label" for="rememberMe">Ghi nhớ tôi</label>
+                            </div>
+                            <a href="@Url.Action("QuenMatKhau", "TaiKhoan")" class="form-link">Quên mật khẩu?</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">Đăng nhập</button>
+                    }
+
+                    <hr class="my-4">
+
+                    <p class="text-center mb-0">
+                        Chưa có tài khoản?
+                        <a href="@Url.Action("DangKy", "TaiKhoan")" class="form-link fw-bold">Đăng ký ngay</a>
+                    </p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>

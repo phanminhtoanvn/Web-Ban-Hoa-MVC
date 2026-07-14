@@ -1,0 +1,63 @@
+﻿@{
+    ViewBag.Title = "Đặt Hàng Thành Công";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<style>
+    /* Animation cho dấu tích xanh */
+    @@keyframes bounceIn {
+        0% { transform: scale(0); opacity: 0; }
+        60% { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); }
+    }
+
+    .success-icon {
+        font-size: 5rem;
+        color: #10b981; /* Màu xanh lá thành công */
+        animation: bounceIn 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        display: inline-block;
+        margin-bottom: 20px;
+        text-shadow: 0 10px 20px rgba(16, 185, 129, 0.3);
+    }
+
+    .success-card {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(20px);
+        border-radius: 30px;
+        padding: 50px;
+        max-width: 600px;
+        margin: auto;
+        box-shadow: 0 15px 50px rgba(236, 72, 153, 0.1);
+        border: 2px solid white;
+    }
+</style>
+
+<div class="container my-5 text-center">
+    <div class="success-card">
+        <div class="success-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+
+        <h2 class="fw-bold mb-3" style="color: #333;">Đặt hàng thành công!</h2>
+
+        <p class="fs-5 text-secondary mb-4">
+            Cảm ơn bạn đã lựa chọn <b>FlowerShop</b>.<br>
+            Đơn hàng của bạn đang được xử lý và sẽ sớm được giao đến.
+        </p>
+
+        <div class="d-flex justify-content-center gap-3 mt-5">
+            <a href="@Url.Action("Index", "Hoa")" class="btn btn-primary px-4 py-2 rounded-pill fw-bold"
+               style="background: #ec4899; border:none; box-shadow: 0 4px 15px rgba(236,72,153,0.4);">
+                <i class="fas fa-shopping-bag me-2"></i>Tiếp tục mua sắm
+            </a>
+
+            @if (ViewBag.MaHD != null)
+            {
+                <a href="@Url.Action("ChiTietDonHang", "TaiKhoan", new { id = ViewBag.MaHD })"
+                   class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-bold">
+                    <i class="fas fa-file-invoice me-2"></i>Xem đơn hàng
+                </a>
+            }
+        </div>
+    </div>
+</div>

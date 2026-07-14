@@ -1,0 +1,300 @@
+﻿@model tblKhachHang
+@{
+    ViewBag.Title = "Hồ sơ của tôi";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+    var listDonHang = ViewBag.LichSuDonHang as List<DoAn.tblHoaDon>;
+
+}
+
+<style>
+    /* --- CSS GLASS PROFILE --- */
+    .profile-glass-card {
+        background: rgba(255, 255, 255, 0.65);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 30px;
+        padding: 40px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.1);
+    }
+
+    /* Input trong suốt */
+    .glass-input {
+        background: rgba(255, 255, 255, 0.5) !important;
+        border: 1px solid rgba(236, 72, 153, 0.2) !important;
+        border-radius: 15px !important;
+        padding: 12px 20px;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+
+        .glass-input:focus {
+            background: white !important;
+            box-shadow: 0 0 0 4px rgba(236, 72, 153, 0.1) !important;
+            border-color: #ec4899 !important;
+        }
+
+        .glass-input[readonly] {
+            background: rgba(0, 0, 0, 0.02) !important;
+            color: #777;
+            cursor: not-allowed;
+        }
+
+    /* Avatar đại diện */
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, #fce7f3 0%, #fbcfe8 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: #ec4899;
+        margin: 0 auto 20px;
+        border: 4px solid white;
+        box-shadow: 0 5px 15px rgba(236, 72, 153, 0.2);
+    }
+
+    /* Nút lưu */
+    .btn-save-glass {
+        background: linear-gradient(45deg, #ec4899, #ff8a80);
+        border: none;
+        border-radius: 50px;
+        padding: 12px 40px;
+        color: white;
+        font-weight: 700;
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+        transition: transform 0.2s;
+        width: 100%;
+    }
+
+        .btn-save-glass:hover {
+            transform: translateY(-2px);
+            color: white;
+        }
+    /* --- CSS CHO BẢNG LỊCH SỬ GỌN GÀNG --- */
+    .history-container {
+        max-height: 400px; /* Chiều cao tối đa, quá thì cuộn */
+        overflow-y: auto; /* Cho phép cuộn dọc */
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.5);
+        background: rgba(255,255,255,0.3); /* Nền nhẹ cho vùng bảng */
+    }
+
+        /* Tùy chỉnh thanh cuộn cho đẹp (Webkit) */
+        .history-container::-webkit-scrollbar {
+            width: 6px; /* Mảnh mai */
+        }
+
+        .history-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .history-container::-webkit-scrollbar-thumb {
+            background: rgba(236, 72, 153, 0.3); /* Màu hồng trong suốt */
+            border-radius: 10px;
+        }
+
+            .history-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(236, 72, 153, 0.6); /* Đậm hơn khi di chuột */
+            }
+
+    /* Ghim tiêu đề bảng (Sticky Header) - Để khi cuộn tiêu đề vẫn đứng yên */
+    .sticky-header th {
+        position: sticky;
+        top: 0;
+        background-color: rgba(255, 255, 255, 0.95); /* Nền trắng đục để che chữ trôi qua */
+        z-index: 2;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+</style>
+
+
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="profile-glass-card">
+
+                <div class="text-center mb-5">
+                    <div class="profile-avatar">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    @if (ViewBag.ThongBao != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show rounded-pill mb-4 shadow-sm" role="alert">
+                            <i class="fas fa-check-circle me-2"></i>@ViewBag.ThongBao
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    }
+
+                    <h2 class="fw-bold text-dark">Hồ sơ cá nhân</h2>
+                    <p class="text-muted">Quản lý thông tin và lịch sử mua hàng</p>
+                </div>
+
+                
+
+                @using (Html.BeginForm("CapNhatThongTin", "TaiKhoan", FormMethod.Post))
+                {
+                    @Html.AntiForgeryToken()
+                    @Html.HiddenFor(model => model.MaKH)
+
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold ms-2">HỌ VÀ TÊN</label>
+                                @Html.TextBoxFor(model => model.TenKH, new { @class = "form-control glass-input", required = "required", placeholder = "Nhập họ tên..." })
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold ms-2">EMAIL (Tên đăng nhập)</label>
+                                @Html.TextBoxFor(model => model.Email, new { @class = "form-control glass-input", type = "email", @readonly = "readonly" })
+                                <div class="form-text text-end fst-italic"><i class="fas fa-lock small me-1"></i>Không thể thay đổi email</div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label text-muted small fw-bold ms-2">SỐ ĐIỆN THOẠI</label>
+                                @Html.TextBoxFor(model => model.DienThoai, new { @class = "form-control glass-input", type = "tel", placeholder = "09..." })
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold ms-2">NĂM SINH</label>
+                                    @Html.TextBoxFor(model => model.NamSinh, new { @class = "form-control glass-input", type = "number" })
+                                </div>
+                                <div class="col-6 mb-3">
+                                    <label class="form-label text-muted small fw-bold ms-2">GIỚI TÍNH</label>
+                                    @Html.DropDownListFor(model => model.GioiTinh, new List<SelectListItem>
+                                    {
+                                        new SelectListItem { Text = "Nam", Value = "Nam" },
+                                        new SelectListItem { Text = "Nữ", Value = "Nữ" },
+                                        new SelectListItem { Text = "Khác", Value = "Khác" }
+                                    }, new { @class = "form-select glass-input" })
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label text-muted small fw-bold ms-2">ĐỊA CHỈ MẶC ĐỊNH</label>
+
+                                <div class="position-relative">
+                                    @Html.TextAreaFor(model => model.DiaChi, new
+                                    {
+                                        @class = "form-control glass-input pe-5",
+                                        rows = "4",
+                                        placeholder = "Bạn chưa thiết lập địa chỉ mặc định...",
+                                        id = "inputDiaChi"
+                                    })
+
+                                    <button type="button" class="btn btn-sm text-danger position-absolute top-0 end-0 mt-2 me-2"
+                                            onclick="xoaDiaChi()"
+                                            title="Xóa địa chỉ này"
+                                            style="background: rgba(255,255,255,0.8); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+
+                                <div class="d-flex justify-content-end mt-2 gap-2">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill" onclick="themDiaChiMau()">
+                                        <i class="fas fa-map-marker-alt me-1"></i> Dùng vị trí mẫu
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <script>
+                            function xoaDiaChi() {
+                                if (confirm('Bạn muốn xóa địa chỉ mặc định này?')) {
+                                    document.getElementById('inputDiaChi').value = '';
+                                    document.getElementById('inputDiaChi').focus();
+                                }
+                            }
+
+                            function themDiaChiMau() {
+                                // Đây là tính năng giả lập lấy vị trí (hoặc ní có thể dùng API Google Maps sau này)
+                                document.getElementById('inputDiaChi').value = '140 Lê Trọng Tấn, Tây Thạnh, Tân Phú, TP.HCM';
+                            }
+                        </script>
+                    </div>
+
+                    <div class="row mt-3">
+                        <div class="col-md-6 offset-md-3">
+                            <button type="submit" class="btn-save-glass">
+                                <i class="fas fa-save me-2"></i> Lưu thay đổi
+                            </button>
+                            <div class="text-center mt-3">
+                                <a href="@Url.Action("DoiMatKhau","TaiKhoan")" class="text-secondary small text-decoration-none hover-pink">
+                                    <i class="fas fa-key me-1"></i> Đổi mật khẩu
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <hr class="my-5 opacity-25">
+
+            <h4 class="fw-bold text-dark mb-4"><i class="fas fa-history me-2 text-pink"></i>Lịch sử đơn hàng</h4>
+
+
+
+
+
+            @if (listDonHang != null && listDonHang.Any())
+            {
+                <div class="table-responsive history-container">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light sticky-header">
+                            <tr>
+                                <th class="py-3 ps-3">Mã đơn</th>
+                                <th>Ngày đặt</th>
+                                <th>Tổng tiền</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-3">Chi tiết</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var don in listDonHang)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-bold text-pink">#@don.MaHD</td>
+                                    <td>@string.Format("{0:dd/MM/yyyy}", don.NgayLap)</td>
+                                    <td class="fw-bold">@string.Format("{0:#,##0} ₫", don.TongTien)</td>
+                                    <td>
+                                        @if (don.TinhTrang == 1)
+                                        {<span class="badge bg-warning text-dark">Chờ xử lý</span> }
+                                        else if (don.TinhTrang == 2)
+                                        { <span class="badge bg-info text-white">Đang giao</span> }
+                                        else if (don.TinhTrang == 3)
+                                        { <span class="badge bg-success">Đã giao</span> }
+                                        else
+                                        { <span class="badge bg-danger">Đã hủy</span>}
+
+                                        @if (don.DaThanhToan == true)
+                                        {
+                                            <i class="fas fa-check-circle text-success ms-1 small" title="Đã thanh toán"></i>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-3">
+                                        <a href="@Url.Action("ChiTietDonHang", "TaiKhoan", new { id = don.MaHD })"
+                                           class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-4 bg-white bg-opacity-25 rounded-3">
+                    <p class="text-muted mb-0">Bạn chưa có đơn hàng nào.</p>
+                    <a href="@Url.Action("Index", "Hoa")" class="text-pink text-decoration-none fw-bold small">Mua ngay đi chờ chi!</a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

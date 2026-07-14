@@ -1,0 +1,257 @@
+﻿@model List<DoAn.Models.GioHang>
+
+@{
+    ViewBag.Title = "Xem Giỏ Hàng";
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+
+
+<div class="container my-5">
+
+    @if (Model.Count > 0)
+    {
+        <div class="cart-glass-card">
+            <h2 class="text-center fw-bold mb-4" style="color: #444;">
+                <i class="fas fa-shopping-bag me-2 text-pink"></i>Giỏ Hàng Của Bạn
+            </h2>
+
+            <div class="table-responsive">
+                <table class="table table-glass align-middle">
+                    <thead>
+                        <tr class="text-uppercase small letter-spacing-1">
+                            <th style="width: 40%">Sản phẩm</th>
+                            <th class="text-center">Đơn giá</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-end">Thành tiền</th>
+                            <th class="text-center">Xóa</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="@Url.Content("~/Content/HinhAnh/" + item.sAnhDaiDien)"
+                                             alt="@item.sTenHoa"
+                                             class="cart-img me-3" />
+
+                                        <div>
+                                            <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.iMaHoa })"
+                                               class="text-decoration-none text-dark fw-bold d-block mb-1" style="font-size: 1.05rem;">
+                                                @item.sTenHoa
+                                            </a>
+                                            <span class="badge bg-light text-secondary rounded-pill border">Mã: @item.iMaHoa</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">
+                                    @item.dGiaBan.ToString("N0") ₫
+                                </td>
+                                <td class="text-center">
+                                    @using (Html.BeginForm("CapNhatGioHang", "GioHang", new { MaHoa = item.iMaHoa }, FormMethod.Post, new { @class = "d-flex justify-content-center align-items-center" }))
+                                    {
+                                        <input type="number" name="txtSoLuong" value="@item.iSoLuong" min="1"
+                                               class="qty-input-glass" />
+
+                                        <button type="submit" class="btn-update-mini" title="Cập nhật số lượng">
+                                            <i class="fas fa-sync-alt small"></i>
+                                        </button>
+                                    }
+                                </td>
+                                <td class="text-end fw-bold text-pink" style="font-size: 1.1rem;">
+                                    @item.dThanhTien.ToString("N0") ₫
+                                </td>
+                                <td class="text-center">
+                                    <a href="@Url.Action("XoaGioHang", "GioHang", new { MaHoa = item.iMaHoa })"
+                                       class="btn-delete-mini"
+                                       title="Xóa sản phẩm này"
+                                       onclick="return confirm('Bạn có chắc muốn xóa sản phẩm này không?');">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row mt-4 pt-4 border-top border-white align-items-center">
+                <div class="col-md-6 mb-3 mb-md-0 d-flex gap-2">
+                    <a href="@Url.Action("Index", "Hoa")" class="btn btn-outline-glass">
+                        <i class="fas fa-arrow-left me-2"></i>Tiếp tục mua
+                    </a>
+                    <a href="@Url.Action("XoaTatCaGioHang", "GioHang")"
+                       class="btn btn-outline-glass text-danger border-danger-subtle"
+                       onclick="return confirm('Bạn chắc chắn muốn xóa hết giỏ hàng chứ?');">
+                        <i class="fas fa-trash me-2"></i>Xóa tất cả
+                    </a>
+                </div>
+
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end align-items-center mb-3">
+                        <span class="text-muted me-3">Tổng thanh toán:</span>
+                        <span class="h3 fw-bold text-pink mb-0">@ViewBag.TongThanhTien.ToString("N0") ₫</span>
+                    </div>
+
+                    <a href="@Url.Action("ThanhToan", "DatHang")" class="btn btn-checkout-glass d-inline-block">
+                        Tiến hành Đặt Hàng <i class="fas fa-chevron-right ms-2"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="cart-glass-card text-center py-5">
+            <div class="mb-4">
+                <i class="fas fa-shopping-basket fa-4x text-pink opacity-25"></i>
+            </div>
+            <h3 class="fw-bold text-secondary mb-3">Giỏ hàng của bạn đang trống</h3>
+            <p class="text-muted mb-4">Có vẻ như bạn chưa chọn sản phẩm nào cả...</p>
+            <a href="@Url.Action("Index", "Hoa")" class="btn btn-checkout-glass">
+                <i class="fas fa-shopping-bag me-2"></i>Dạo một vòng xem hoa
+            </a>
+        </div>
+    }
+</div>
+
+<style>
+    /* --- CSS RIÊNG CHO GIỎ HÀNG (GLASS STYLE) --- */
+
+    /* 1. Khung kính bao quanh toàn bộ giỏ hàng */
+    .cart-glass-card {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.8);
+        border-radius: 30px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(236, 72, 153, 0.1);
+    }
+
+    /* 2. Tùy chỉnh bảng để trong suốt */
+    .table-glass {
+        --bs-table-bg: transparent; /* Bỏ màu nền mặc định của Bootstrap */
+        --bs-table-hover-bg: rgba(236, 72, 153, 0.05); /* Hover màu hồng siêu nhạt */
+    }
+
+        .table-glass th {
+            font-weight: 700;
+            color: #555;
+            border-bottom: 2px solid rgba(236, 72, 153, 0.2);
+            padding-bottom: 15px;
+        }
+
+        .table-glass td {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5); /* Đường kẻ mờ */
+            padding: 20px 10px;
+        }
+
+    /* 3. Ảnh sản phẩm bo tròn */
+    .cart-img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 15px; /* Bo góc mềm mại */
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    /* 4. Input số lượng hình viên thuốc */
+    .qty-input-glass {
+        background: rgba(255, 255, 255, 0.5);
+        border: 1px solid rgba(236, 72, 153, 0.3);
+        border-radius: 20px;
+        text-align: center;
+        width: 60px;
+        padding: 5px;
+        font-weight: 600;
+        color: #333;
+        transition: all 0.3s;
+    }
+
+        .qty-input-glass:focus {
+            background: white;
+            border-color: #ec4899;
+            box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+            outline: none;
+        }
+
+    /* 5. Nút cập nhật nhỏ xinh */
+    .btn-update-mini {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.8);
+        color: #28a745; /* Màu xanh lá */
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        margin-left: 5px;
+    }
+
+        .btn-update-mini:hover {
+            background: #28a745;
+            color: white;
+            transform: scale(1.1);
+        }
+
+    /* 6. Nút xóa thùng rác */
+    .btn-delete-mini {
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        border: 1px solid #fee2e2;
+        background: #fff5f5;
+        color: #ef4444;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+        .btn-delete-mini:hover {
+            background: #ef4444;
+            color: white;
+            transform: rotate(15deg); /* Hiệu ứng lắc thùng rác */
+        }
+
+    /* 7. Nút Đặt hàng Gradient */
+    .btn-checkout-glass {
+        background: linear-gradient(45deg, #ec4899, #ff8a80);
+        border: none;
+        border-radius: 50px;
+        padding: 12px 40px;
+        color: white;
+        font-weight: 700;
+        font-size: 1.1rem;
+        box-shadow: 0 4px 15px rgba(236, 72, 153, 0.4);
+        transition: all 0.3s;
+    }
+
+        .btn-checkout-glass:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.5);
+            color: white;
+        }
+
+    /* Các nút phụ */
+    .btn-outline-glass {
+        border-radius: 50px;
+        border: 2px solid #e5e7eb;
+        background: transparent;
+        color: #6b7280;
+        font-weight: 600;
+        padding: 8px 20px;
+        transition: all 0.3s;
+    }
+
+        .btn-outline-glass:hover {
+            border-color: #ec4899;
+            color: #ec4899;
+            background: white;
+        }
+</style>
