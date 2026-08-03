@@ -1,0 +1,49 @@
+[{
+  "_id": {
+    "$oid": "6a6f46d3d9976f621f92e266"
+  },
+  "TieuDe": "Bí quyết giữ hoa hồng tươi lâu trong ngày hè",
+  "NoiDung_HTML": "<h3>1. Cắt tỉa cành đúng cách</h3><p>Cắt chéo gốc 45 độ giúp hoa hút nước tốt hơn.</p><h3>2. Thay nước thường xuyên</h3><p>Nên thay nước mỗi ngày vào buổi sáng sớm.</p>",
+  "TacGia": "Phan Minh Toàn",
+  "NgayDang": {
+    "$date": "2026-08-01T08:30:00.000Z"
+  },
+  "LuotXem": 142,
+  "Tags": [
+    "CachChamSoc",
+    "HoaHong",
+    "MeoHay"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a6f46d3d9976f621f92e267"
+  },
+  "TieuDe": "Thông báo: Kế hoạch tổ chức sự kiện Workshop cắm hoa",
+  "NoiDung_HTML": "<h1>Kế hoạch sự kiện tháng 8</h1><p>Cửa hàng sẽ tổ chức buổi workshop hướng dẫn cắm hoa nghệ thuật. Mọi người lưu ý lịch trình chi tiết đã được đính kèm để chuẩn bị không gian và nguyên vật liệu tốt nhất.</p>",
+  "TacGia": "Ban Quản Lý",
+  "NgayDang": {
+    "$date": "2026-08-02T10:15:00.000Z"
+  },
+  "LuotXem": 56,
+  "Tags": [
+    "ThongBao",
+    "SuKien"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a6f46d3d9976f621f92e268"
+  },
+  "TieuDe": "Ý nghĩa các loài hoa khai trương",
+  "NoiDung_HTML": "<p>Hoa hướng dương tượng trưng cho sự khởi đầu rực rỡ và thành công. Hoa ly thể hiện sự sang trọng và thịnh vượng...</p>",
+  "TacGia": "Phan Minh Toàn",
+  "NgayDang": {
+    "$date": "2026-07-28T14:00:00.000Z"
+  },
+  "LuotXem": 210,
+  "Tags": [
+    "YNghiaHoa",
+    "KhaiTruong"
+  ]
+}]

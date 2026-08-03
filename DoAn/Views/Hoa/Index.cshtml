@@ -1,10 +1,10 @@
-﻿
-@model PagedList.IPagedList<tblHoa>
+﻿@model PagedList.IPagedList<tblHoa>
 @using PagedList.Mvc
 @{
     ViewBag.Title = "Trang chủ";
     Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
 }
+
 
 <section class="py-4">
     <div class="container-fluid px-0">
@@ -13,7 +13,6 @@
                 <h2 class="section-title text-start mb-2">Danh Sách Sản Phẩm</h2>
                 <p class="section-subtitle text-start mb-0">Những mẫu hoa được yêu thích nhất</p>
             </div>
-
         </div>
 
         <div class="row g-3 g-lg-4">
@@ -28,7 +27,8 @@
                             </a>
                             <span class="product-badge">Giảm 18%</span>
 
-                            <button class="favorite-btn">
+                            <!-- Đã thêm class btn-yeuthich và thuộc tính data-id -->
+                            <button class="favorite-btn btn-yeuthich" data-id="@item.MaHoa" title="Thêm vào yêu thích">
                                 <i class="far fa-heart"></i>
                             </button>
                         </div>
@@ -49,18 +49,16 @@
                                 <span class="original-price">@(string.Format("{0:#,##0}", (item.GiaBan ?? 0) * 1.18m)) VNĐ</span>
                             </div>
 
-
-
                             <a href="@Url.Action("ThemGioHang", "GioHang", new { MaHoa = item.MaHoa, strURL = Request.Url.ToString() })"
                                class="add-to-cart-btn">
                                 <i class="fas fa-shopping-cart me-1"></i> Thêm vào giỏ
                             </a>
                         </div>
-
                     </div>
                 </div>
             }
         </div>
+
         <div class="d-flex justify-content-center mt-4">
             @Html.PagedListPager(
                 Model,
@@ -74,13 +72,48 @@
                 }),
                 new PagedListRenderOptions
                 {
-
                     UlElementClasses = new[] { "pagination" },
                     LiElementClasses = new[] { "page-item" }
-
-
                 }
             )
         </div>
     </div>
 </section>
+
+<!-- Script xử lý AJAX cho nút Yêu thích -->
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('.btn-yeuthich').click(function (e) {
+                e.preventDefault();
+                var btn = $(this);
+                var maHoa = btn.data('id');
+                var icon = btn.find('i');
+
+                $.ajax({
+                    url: '@Url.Action("ToggleYeuThich", "YeuThich")',
+                    type: 'POST',
+                    data: { maHoa: maHoa },
+                    success: function (response) {
+                        if (response.success) {
+                            if (response.liked) {
+                                // Trái tim đặc và thêm màu đỏ khi đã thích
+                                icon.removeClass('far').addClass('fas text-danger');
+                            } else {
+                                // Trái tim rỗng khi bỏ thích
+                                icon.removeClass('fas text-danger').addClass('far');
+                            }
+                        } else {
+                            alert(response.message);
+                            // Mở comment dòng dưới nếu muốn tự động chuyển hướng đến trang Đăng nhập
+                            // window.location.href = '/KhachHang/DangNhap';
+                        }
+                    },
+                    error: function () {
+                        alert("Đã xảy ra lỗi kết nối với máy chủ.");
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,48 @@
+﻿@model DoAn.Models.CamNangHoaMongo
+@{
+    ViewBag.Title = Model.TieuDe;
+    Layout = "~/Views/Shared/_LayoutBanHoa.cshtml";
+}
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Breadcrumb -->
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb bg-transparent p-0">
+                    <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-secondary">Trang chủ</a></li>
+                    <li class="breadcrumb-item"><a href="@Url.Action("Index", "TinTuc")" class="text-decoration-none text-secondary">Cẩm nang</a></li>
+                    <li class="breadcrumb-item active text-pink" aria-current="page">@Model.TieuDe</li>
+                </ol>
+            </nav>
+
+            <!-- Tiêu đề và Thông tin bài viết -->
+            <h1 class="fw-bold mb-3" style="color: #333;">@Model.TieuDe</h1>
+
+            <div class="d-flex align-items-center text-muted small mb-4 pb-3 border-bottom">
+                <span class="me-3"><i class="fas fa-user-circle me-1 text-pink"></i>@Model.TacGia</span>
+                <span class="me-3"><i class="far fa-clock me-1 text-pink"></i>@Model.NgayDang.ToString("dd/MM/yyyy HH:mm")</span>
+                <span><i class="far fa-eye me-1 text-pink"></i>@Model.LuotXem lượt xem</span>
+            </div>
+
+            <!-- Nội dung chính -->
+            <div class="blog-content" style="line-height: 1.8; font-size: 1.1rem; color: #444;">
+                @Html.Raw(Model.NoiDung_HTML)
+            </div>
+
+            <!-- Tags -->
+            @if (Model.Tags != null && Model.Tags.Any())
+            {
+                <div class="mt-5 pt-3 border-top">
+                    <span class="fw-bold me-2"><i class="fas fa-tags text-pink me-2"></i>Từ khóa:</span>
+                    @foreach (var tag in Model.Tags)
+                    {
+                        <a href="@Url.Action("Index", "TinTuc", new { tagFilter = tag })" class="badge bg-light text-secondary border text-decoration-none me-1 p-2">
+                            #@tag
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

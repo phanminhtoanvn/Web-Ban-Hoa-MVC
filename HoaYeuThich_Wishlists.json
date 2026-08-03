@@ -1,0 +1,35 @@
+[{
+  "_id": {
+    "$oid": "6a6f4f7f1c509ab227e6edfd"
+  },
+  "MaKH": 12,
+  "DanhSachMaHoa": [
+    3,
+    4,
+    5,
+    1,
+    2
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a6f529156156ff3f2154340"
+  },
+  "MaKH": 1,
+  "DanhSachMaHoa": [
+    2,
+    7,
+    1
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a7082bbda38c57a97e0bb75"
+  },
+  "MaKH": 13,
+  "DanhSachMaHoa": [
+    2,
+    6,
+    3
+  ]
+}]

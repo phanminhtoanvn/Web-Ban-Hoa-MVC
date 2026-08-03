@@ -7,6 +7,9 @@ using System.Web.Mvc;
 using PagedList;
 using PagedList.Mvc;
 using System.Data.Entity;
+using DoAn.Data;   // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB
+using DoAn.Models; // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB MODEL
+using MongoDB.Driver;
 
 namespace DoAn.Controllers
 {
@@ -15,8 +18,8 @@ namespace DoAn.Controllers
         QL_BanHoaEntities2 db = new QL_BanHoaEntities2();
         // GET: Hoa
         // (Nhớ using System.Data.Entity; và using PagedList; ở đầu file nha)
+        MongoDbContext mongoDb = new MongoDbContext();
 
-        
         public ActionResult Index(string q, int? maDM, int? maLoaiChinh, int[] gia, int? page)
         {
             int pageSize = 8;
@@ -62,12 +65,28 @@ namespace DoAn.Controllers
             // 5. GỬI DATA CHO SIDEBAR LỌC
             // Gửi list "Loại Hoa" (Hoa Hồng, Ly...) cho cái dropdown
             ViewBag.LoaiHoaList = db.tblLoaiHoaChinh.ToList();
+            // thêm yêu thích
+            List<int> likedFlowers = new List<int>();
+            if (Session["MaKH"] != null)
+            {
+                int maKH = (int)Session["MaKH"];
+                var mongoDb = new DoAn.Data.MongoDbContext(); // Thay thế DoAn.Data bằng namespace tương ứng chứa MongoDbContext của bạn
+                var wishlist = mongoDb.HoaYeuThich_Wishlists.Find(x => x.MaKH == maKH).FirstOrDefault();
+
+                if (wishlist != null && wishlist.DanhSachMaHoa != null)
+                {
+                    likedFlowers = wishlist.DanhSachMaHoa;
+                }
+            }
+            ViewBag.LikedFlowers = likedFlowers;
 
             // 6. Sắp xếp (Bắt buộc)
             hoaList = hoaList.OrderBy(h => h.MaHoa);
 
             // 7. Phân trang và trả về View
             return View(hoaList.ToPagedList(pageNumber, pageSize));
+
+
         }
 
         public ActionResult ChiTietHoa(int? id)
@@ -95,10 +114,24 @@ namespace DoAn.Controllers
             ViewBag.HinhAnhGallery = db.tblHinhAnh
                 .Where(h => h.MaHoa == id).ToList();
 
-            // 2. Lấy bình luận
-            List<BinhLuan> lstBinhLuan = db.BinhLuan.Where(b => b.MaHoa == id).OrderByDescending(b => b.Ngay).ToList();
+            // 2. Lấy bình luận từ Mongo
+            var lstBinhLuan = mongoDb.BinhLuan_Reviews
+                                     .Find(b => b.MaHoa == id)
+                                     .SortByDescending(b => b.Ngay)
+                                     .ToList();
             ViewBag.BinhLuan = lstBinhLuan;
 
+            // THỐNG KÊ MONGODB: Tính điểm sao trung bình bằng Aggregation Framework
+            var thongKeSao = mongoDb.BinhLuan_Reviews.Aggregate()
+                                    .Match(b => b.MaHoa == id)
+                                    .Group(b => b.MaHoa, g => new {
+                                        MaHoa = g.Key,
+                                        DiemTrungBinh = g.Average(x => x.SoSao)
+                                    })
+                                    .FirstOrDefault();
+
+            // Nếu chưa có bình luận nào thì mặc định hiển thị 5 sao, ngược lại thì làm tròn 1 chữ số thập phân
+            ViewBag.DiemTrungBinh = thongKeSao != null ? Math.Round(thongKeSao.DiemTrungBinh, 1) : 5.0;
 
             return View(hoa);
         }
@@ -195,8 +228,8 @@ namespace DoAn.Controllers
 
             if (khachHang != null)
             {
-                // 3. Tạo bình luận (Khớp với cột trong db_moi.sql)
-                BinhLuan bl = new BinhLuan();
+                // 3. Tạo bình luận (Khớp với cột trong db_moi.sql) đã sửa khớp với mongo
+                BinhLuanMongo bl = new BinhLuanMongo();
                 bl.MaHoa = MaHoa;
                 bl.HoTen = khachHang.TenKH; // Lưu tên khách vào cột HoTen
                 bl.NoiDung = NoiDung;
@@ -205,8 +238,7 @@ namespace DoAn.Controllers
 
                 // Lưu ý: DB của ní không có cột MaKH nên mình không gán bl.MaKH
 
-                db.BinhLuan.Add(bl);
-                db.SaveChanges();
+                mongoDb.BinhLuan_Reviews.InsertOne(bl);
             }
 
             return RedirectToAction("ChiTietHoa", new { id = MaHoa });

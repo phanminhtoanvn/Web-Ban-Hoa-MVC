@@ -1,0 +1,42 @@
+[{
+  "_id": {
+    "$oid": "6a6ef065485db592a1c16760"
+  },
+  "MaHoa": 1,
+  "HoTen": "phanminhtoan",
+  "NoiDung": "hoa tươi và đẹp ",
+  "SoSao": 5,
+  "Ngay": {
+    "$date": "2026-08-02T07:23:17.068Z"
+  },
+  "HinhAnh": null,
+  "Thich": 0
+},
+{
+  "_id": {
+    "$oid": "6a6f4461dc75775a6af7598a"
+  },
+  "MaHoa": 1,
+  "HoTen": "Nguyễn Văn A",
+  "NoiDung": "tốt\r\n",
+  "SoSao": 3,
+  "Ngay": {
+    "$date": "2026-08-02T13:21:37.970Z"
+  },
+  "HinhAnh": null,
+  "Thich": 0
+},
+{
+  "_id": {
+    "$oid": "6a7082ceda38c57a97e0bb76"
+  },
+  "MaHoa": 2,
+  "HoTen": "Toàn Phan",
+  "NoiDung": "đẹp",
+  "SoSao": 4,
+  "Ngay": {
+    "$date": "2026-08-03T12:00:14.410Z"
+  },
+  "HinhAnh": null,
+  "Thich": 0
+}]
