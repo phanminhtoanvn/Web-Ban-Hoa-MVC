@@ -1,11 +1,15 @@
-﻿using System;
+﻿using DoAn.Services;
+using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Entity;
+using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using System.IO;
-using System.Data.Entity;
+using Neo4jClient;
+
 namespace DoAn.Controllers
 {
     public class AdminController : Controller
@@ -148,7 +152,7 @@ namespace DoAn.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult ThemSanPham(FormCollection collection, HttpPostedFileBase AnhDaiDien_Add)
+        public async Task<ActionResult> ThemSanPham(FormCollection collection, HttpPostedFileBase AnhDaiDien_Add)
         {
             // 1. Tạo đối tượng Hoa
             tblHoa newHoa = new tblHoa();
@@ -181,6 +185,15 @@ namespace DoAn.Controllers
             // 3. Thêm vào CSDL
             db.tblHoa.Add(newHoa);
             db.SaveChanges();
+            var neo4j = new Neo4jService();
+            var client = await neo4j.GetClient();
+
+            await client.Cypher
+                .Merge("(f:Flower {id: $id})")
+                .WithParam("id", newHoa.MaHoa)
+                .Set("f.name = $name")
+                .WithParam("name", newHoa.TenHoa)
+                .ExecuteWithoutResultsAsync();
 
             return RedirectToAction("SanPham");
         }

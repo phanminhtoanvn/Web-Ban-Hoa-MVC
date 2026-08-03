@@ -1,15 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Web;
-using System.Web.Mvc;
+﻿using DoAn.Data;   // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB
+using DoAn.Models; // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB MODEL
+using DoAn.Services;
+using MongoDB.Driver;
 using PagedList;
 using PagedList.Mvc;
+using System;
+using System.Collections.Generic;
 using System.Data.Entity;
-using DoAn.Data;   // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB
-using DoAn.Models; // <--- THÊM DÒNG NÀY ĐỂ GỌI MONGODB MODEL
-using MongoDB.Driver;
+using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
+using System.Web;
+using System.Web.Mvc;
 
 namespace DoAn.Controllers
 {
@@ -214,7 +216,7 @@ namespace DoAn.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult ThemBinhLuan(int MaHoa, string NoiDung, int SoSao)
+        public async Task<ActionResult> ThemBinhLuan(int MaHoa, string NoiDung, int SoSao)
         {
             // 1. Kiểm tra đăng nhập (để lấy tên người bình luận)
             if (Session["MaKH"] == null)
@@ -239,6 +241,20 @@ namespace DoAn.Controllers
                 // Lưu ý: DB của ní không có cột MaKH nên mình không gán bl.MaKH
 
                 mongoDb.BinhLuan_Reviews.InsertOne(bl);
+                var neo4j = new Neo4jService();
+                var client = await neo4j.GetClient();
+
+                await client.Cypher
+                    .Match("(c:Customer)")
+                    .Match("(f:Flower)")
+                    .Where("c.id = $customerId")
+                    .AndWhere("f.id = $flowerId")
+                    .WithParam("customerId", maKH)
+                    .WithParam("flowerId", MaHoa)
+                    .Merge("(c)-[r:REVIEWED]->(f)")
+                    .Set("r.rating = $rating")
+                    .WithParam("rating", SoSao)
+                    .ExecuteWithoutResultsAsync();
             }
 
             return RedirectToAction("ChiTietHoa", new { id = MaHoa });

@@ -1,9 +1,11 @@
-﻿using System;
+﻿using DoAn.Services;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Net;
 using System.Net.Mail;
+using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
 
@@ -31,7 +33,7 @@ namespace DoAn.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult DangKy(FormCollection collection)
+        public async Task<ActionResult> DangKy(FormCollection collection)
         {
             // 1. Lấy dữ liệu từ form
             string hoTen = collection["FullName"];
@@ -73,6 +75,16 @@ namespace DoAn.Controllers
 
             db.tblKhachHang.Add(khMoi);
             db.SaveChanges();
+
+            var neo4j = new Neo4jService();
+            var client = await neo4j.GetClient();
+
+            await client.Cypher
+                .Merge("(c:Customer {id: $id})")
+                .WithParam("id", khMoi.MaKH)
+                .Set("c.name = $name")
+                .WithParam("name", khMoi.TenKH)
+                .ExecuteWithoutResultsAsync();
 
             // 1. TỰ ĐỘNG ĐĂNG NHẬP LUÔN (Không bắt khách nhập lại nữa)
             Session["TenKH"] = khMoi.TenKH;

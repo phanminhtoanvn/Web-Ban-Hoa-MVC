@@ -5,6 +5,8 @@ using System.Data;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using System.Threading.Tasks;
+using DoAn.Services;
 
 namespace DoAn.Controllers
 {
@@ -71,7 +73,7 @@ namespace DoAn.Controllers
 
         // 1. Sửa hàm XacNhanDatHang
         [HttpPost]
-        public ActionResult XacNhanDatHang(FormCollection form)
+        public async Task<ActionResult> XacNhanDatHang(FormCollection form)
         {
             
             List<GioHang> lstGioHang = LayGioHang();
@@ -79,6 +81,8 @@ namespace DoAn.Controllers
             {
                 return RedirectToAction("Index", "Hoa");
             }
+            var neo4j = new Neo4jService();
+            var client = await neo4j.GetClient();
 
             tblHoaDon hoaDon = new tblHoaDon();
             hoaDon.NgayLap = DateTime.Now;
@@ -119,6 +123,13 @@ namespace DoAn.Controllers
                     khachMoi.MatKhau = "123456";
                     db.tblKhachHang.Add(khachMoi);
                     db.SaveChanges();
+                    await client.Cypher
+                    .Merge("(c:Customer {id: $id})")
+                    .WithParam("id", khachMoi.MaKH)
+                    .Set("c.name = $name")
+                    .WithParam("name", khachMoi.TenKH)
+                    .ExecuteWithoutResultsAsync();
+
 
                     hoaDon.MaKH = khachMoi.MaKH;
 
@@ -144,6 +155,19 @@ namespace DoAn.Controllers
                 db.tblChiTietHoaDon.Add(chiTietHD);
             }
             db.SaveChanges();
+            foreach (var item in lstGioHang)
+            {
+                await client.Cypher
+                    .Match("(c:Customer)")
+                    .Match("(f:Flower)")
+                    .Where("c.id = $customerId")
+                    .AndWhere("f.id = $flowerId")
+                    .WithParam("customerId", hoaDon.MaKH)
+                    .WithParam("flowerId", item.iMaHoa)
+                    .Merge("(c)-[:BOUGHT]->(f)")
+                    .ExecuteWithoutResultsAsync();
+            }
+
             Session["GioHang"] = null;
 
             string pttt = form["PhuongThucThanhToan"];
