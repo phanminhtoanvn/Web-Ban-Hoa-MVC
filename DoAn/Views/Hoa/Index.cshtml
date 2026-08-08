@@ -40,8 +40,27 @@
                                 <span class="text-muted">(128)</span>
                             </div>
 
+                            @{
+                                var dsDeXuat = ViewBag.DanhSachDeXuat as List<int> ?? new List<int>();
+                                var top10BanChay = ViewBag.Top10BanChay as List<int> ?? new List<int>();
+                            }
+
                             <a href="@Url.Action("ChiTietHoa", "Hoa", new { id = item.MaHoa })" style="text-decoration:none">
-                                <h5 class="product-name">@item.TenHoa</h5>
+                                <h5 class="product-name d-flex align-items-center flex-wrap">
+                                    <span>@item.TenHoa</span>
+
+                                    <!-- 1. Nhãn BÁN CHẠY (Tự động 100% từ Cassandra Top 10) -->
+                                    @if (top10BanChay.Contains(item.MaHoa))
+                                    {
+                                        <span class="badge bg-warning text-dark ms-2" style="font-size:10px;">🔥 Bán chạy</span>
+                                    }
+
+                                    <!-- 2. Nhãn ĐƯỢC ĐỀ XUẤT (Admin ghim thủ công) -->
+                                    @if (dsDeXuat.Contains(item.MaHoa))
+                                    {
+                                        <span class="badge bg-danger text-white ms-2" style="font-size:10px;">⭐ Được đề xuất</span>
+                                    }
+                                </h5>
                             </a>
 
                             <div class="product-price">

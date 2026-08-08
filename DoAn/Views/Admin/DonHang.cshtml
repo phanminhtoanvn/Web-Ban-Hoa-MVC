@@ -1,4 +1,6 @@
-﻿@model List<DoAn.tblHoaDon>
+﻿//Thêm cột trạng thái vào
+
+@model List<DoAn.tblHoaDon>
 @{
     ViewBag.Title = "Quản lý Đơn hàng";
     Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
@@ -17,7 +19,8 @@
                     <th>Ngày đặt</th>
                     <th>Tổng tiền</th>
                     <th>Thanh toán</th>
-                    <th>Trạng thái (Cập nhật)</th>
+                    <th>Trạng thái hiện tại</th> <!-- MỚI THÊM -->
+                    <th>Cập nhật trạng thái</th>
                 </tr>
             </thead>
             <tbody>
@@ -44,6 +47,21 @@
                                     <i class="fas fa-clock me-1"></i>Chờ thanh toán
                                 </span>
                             }
+                        </td>
+                        <!-- Cột MỚI: Hiển thị nhãn Trạng thái hiện tại -->
+                        <td>
+                            @{
+                                string statusName = item.tblTinhTrang != null ? item.tblTinhTrang.TinhTrangHoaDon : "Chờ xử lý";
+                                string badgeClass = "bg-info text-dark"; // Mặc định
+
+                                if (item.TinhTrang == 1) { badgeClass = "bg-warning text-dark"; }      // Chờ xử lý / Mới
+                                else if (item.TinhTrang == 2) { badgeClass = "bg-primary text-white"; } // Đang giao
+                                else if (item.TinhTrang == 3) { badgeClass = "bg-success text-white"; } // Đã giao
+                                else if (item.TinhTrang == 4) { badgeClass = "bg-danger text-white"; }  // Đã hủy
+                            }
+                            <span class="badge @badgeClass px-3 py-2 rounded-pill">
+                                @statusName
+                            </span>
                         </td>
                         <td>
                             @using (Html.BeginForm("CapNhatTrangThai", "Admin", FormMethod.Post))

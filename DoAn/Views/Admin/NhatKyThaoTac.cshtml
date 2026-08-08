@@ -1,0 +1,70 @@
+﻿@model IEnumerable<dynamic>
+@{
+    ViewBag.Title = "Nhật ký thao tác Admin";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-dark">📋 Nhật Ký Thao Tác Admin (Cassandra Log)</h2>
+
+    @using (Html.BeginForm("XoaLichSuThaoTac", "Admin", FormMethod.Post, new { onsubmit = "return confirm('Bạn có chắc muốn xóa hết lịch sử để giải phóng dung lượng?');" }))
+    {
+        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill">
+            <i class="fas fa-trash me-1"></i> Xóa sạch lịch sử
+        </button>
+    }
+</div>
+
+@if (TempData["ThongBao"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show rounded-pill px-4" role="alert">
+        <i class="fas fa-check-circle me-2"></i>@TempData["ThongBao"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card p-3 shadow-sm border-0 rounded-4">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Thời gian</th>
+                <th>Admin thực hiện</th>
+                <th>Hành động</th>
+                <th>Mô tả chi tiết</th>
+                <th class="text-center">Khôi phục</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                foreach (var log in Model)
+                {
+                    <tr>
+                        <td><small class="text-muted">@log.CreatedAt</small></td>
+                        <td><span class="badge bg-secondary">@log.AdminName</span></td>
+                        <td>
+                            <span class="badge @(log.ActionType == "DELETE" ? "bg-danger" : (log.ActionType == "INSERT" ? "bg-success" : "bg-warning"))">
+                                @log.ActionType
+                            </span>
+                        </td>
+                        <td><b>@log.Description</b></td>
+                        <td class="text-center">
+                            @using (Html.BeginForm("KhoiPhucThaoTac", "Admin", new { logId = log.LogId }))
+                            {
+                                <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                    <i class="fas fa-undo me-1"></i> Khôi phục
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center text-muted py-4">Chưa có nhật ký thao tác nào.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

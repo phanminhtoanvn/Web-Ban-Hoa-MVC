@@ -1,4 +1,8 @@
-﻿using DoAn.Services;
+﻿using Cassandra;
+using DoAn.Services;
+using Microsoft.VisualBasic;
+using MongoDB.Driver.Core.Servers;
+using Neo4jClient;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -8,7 +12,21 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Web;
 using System.Web.Mvc;
-using Neo4jClient;
+using Newtonsoft.Json;
+//Quy tắc đặt code cho khôi phục:
+//1.Đối với SỬA(UPDATE) &XÓA(DELETE)
+//Cứ theo đúng 3 bước như Bình nói:
+//    Lưu oldDataJson trước (để chộp lấy dữ liệu cũ trước khi nó bị sửa/xóa).
+//    Gọi db.SaveChanges() (để SQL Server cập nhật dữ liệu mới/xóa hẳn).
+//    Gọi cassService.LogAdminAction(...) (để bắn dữ liệu cũ sang Cassandra làm log Undo).
+
+//2. Riêng đối với THÊM MỚI (CREATE)
+//Chỉ khác một xíu ở bước 1 và 2:
+//    Gọi db.SaveChanges() TRƯỚC(để SQL Server tự tạo ra cái MaHoa / MaDM tự tăng).
+//    Lưu newDataJson SAU (vì lúc này mới có cái MaID vừa sinh ra để mà đóng gói chuỗi).
+//    Gọi cassService.LogAdminAction(...).
+
+//Đã fix lỗi cập nhật trạng thái đơn hàng không thành công [!]
 
 namespace DoAn.Controllers
 {
@@ -182,9 +200,17 @@ namespace DoAn.Controllers
                 AnhDaiDien_Add.SaveAs(savePath);
             }
 
-            // 3. Thêm vào CSDL
+            // 3. Thêm vào CSDL SQL Server
             db.tblHoa.Add(newHoa);
-            db.SaveChanges();
+            db.SaveChanges(); // Luôn gọi SaveChanges() trước để CSDL cấp tự động MaHoa!
+
+            // 4. Lưu dữ liệu vừa tạo vào oldDataJson (Dùng ký tự | phân cách cho an toàn)
+            string newDataJson = $"{newHoa.MaHoa}|{newHoa.TenHoa}|{newHoa.GiaBan}|{newHoa.AnhDaiDien}|{newHoa.MaDM}|{newHoa.MaLoaiChinh}";
+
+            // 5. Ghi log vào Cassandra (cột old_data sẽ chứa newDataJson)
+            var cassService = new CassandraService();
+            string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+            cassService.LogAdminAction(adminName, "CREATE", "tblHoa", newHoa.MaHoa, $"Thêm sản phẩm: {newHoa.TenHoa}", newDataJson);
             var neo4j = new Neo4jService();
             var client = await neo4j.GetClient();
 
@@ -242,8 +268,17 @@ namespace DoAn.Controllers
                 }
                 // Nếu không upload ảnh mới, thì cứ giữ nguyên ảnh cũ, không làm gì cả
 
+                // 3. Lưu dữ liệu vừa tạo vào oldDataJson (Dùng ký tự ### phân cách cho an toàn)
+                string newDataJson = $"{hoaToUpdate.MaHoa}|{hoaToUpdate.TenHoa}|{hoaToUpdate.GiaBan}|{hoaToUpdate.AnhDaiDien}|{hoaToUpdate.MaDM}|{hoaToUpdate.MaLoaiChinh}";
+
+                // 4. Thêm vào CSDL SQL Server
                 db.Entry(hoaToUpdate).State = EntityState.Modified;
                 db.SaveChanges();
+
+                // 5. Ghi log vào Cassandra (cột old_data sẽ chứa newDataJson)
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "UPDATE", "tblHoa", maHoa, $"Cập nhật sản phẩm: {hoaToUpdate.TenHoa}", newDataJson);
             }
 
             return RedirectToAction("SanPham");
@@ -258,6 +293,9 @@ namespace DoAn.Controllers
 
             if (hoaToDelete != null)
             {
+                // Lưu tên sản phẩm để ghi log
+                string tenHoa = hoaToDelete.TenHoa;
+
                 // 1. Kiểm tra xem hoa này có trong đơn hàng nào không
                 bool daCoNguoiMua = db.tblChiTietHoaDon.Any(ct => ct.MaHoa == maHoa);
 
@@ -275,8 +313,16 @@ namespace DoAn.Controllers
                     if (System.IO.File.Exists(path)) System.IO.File.Delete(path);
                 }
 
+                // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
+                string oldDataJson = $"{hoaToDelete.TenHoa}|{hoaToDelete.GiaBan}|{hoaToDelete.AnhDaiDien}|{hoaToDelete.MaDM}|{hoaToDelete.MaLoaiChinh}|{hoaToDelete.MoTa}";
+
                 db.tblHoa.Remove(hoaToDelete);
-                db.SaveChanges();
+                db.SaveChanges(); //
+
+                // Ghi log vào Cassandra kèm old_data
+                var cassService = new CassandraService(); 
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin"; 
+                cassService.LogAdminAction(adminName, "DELETE", "tblHoa", maHoa, $"Xóa sản phẩm: {tenHoa}", oldDataJson); 
             }
             return RedirectToAction("SanPham");
         }
@@ -307,31 +353,34 @@ namespace DoAn.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult CapNhatTrangThai(FormCollection collection)
         {
-            // Lấy 2 giá trị từ form
             int maHD = int.Parse(collection["MaHD_Update"]);
             int newStatusID = int.Parse(collection["TinhTrang_Update"]);
 
-            // Tìm đơn hàng
             tblHoaDon donHang = db.tblHoaDon.Find(maHD);
 
             if (donHang != null)
             {
-                // Cập nhật trạng thái mới
+                // 1. LẤY TRẠNG THÁI CŨ TRONG CSDL TRƯỚC KHI SỬA (Để làm Undo)
+                // Cú pháp: MaHD|TinhTrangCu|DaThanhToanCu
+                string oldDataJson = $"{donHang.MaHD}|{donHang.TinhTrang}|{(donHang.DaThanhToan == true ? 1 : 0)}";
+
+                // 2. MỚI GÁN TRẠNG THÁI MỚI VÀO MODEL
                 donHang.TinhTrang = newStatusID;
 
-                // LOGIC QUAN TRỌNG:
-                // Nếu trạng thái là "Đã giao hàng" (ID = 3)
-                // thì tự động cập nhật là "Đã thanh toán"
-                if (newStatusID == 3) // Giả sử 3 = Đã giao hàng
+                if (newStatusID == 3) // Đã giao hàng -> Đã thanh toán
                 {
                     donHang.DaThanhToan = true;
                 }
 
                 db.Entry(donHang).State = EntityState.Modified;
                 db.SaveChanges();
+
+                // 3. Ghi log sang Cassandra
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "UPDATE", "tblHoaDon", maHD, $"Cập nhật trạng thái đơn hàng #{maHD} sang ID: {newStatusID}", oldDataJson);
             }
 
-            // Tải lại trang
             return RedirectToAction("DonHang");
         }
 
@@ -368,8 +417,17 @@ namespace DoAn.Controllers
             newDanhMuc.GhiChu = ghiChu;
 
             // Thêm vào CSDL
+
+            // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
             db.tblDanhMucHoa.Add(newDanhMuc);
             db.SaveChanges();
+
+            string oldDataJson = $"{newDanhMuc.MaDM}|{newDanhMuc.TenDM}|{newDanhMuc.GhiChu}";
+
+            // Ghi log vào Cassandra kèm old_data
+            var cassService = new CassandraService();
+            string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+            cassService.LogAdminAction(adminName, "CREATE", "tblDanhMucHoa", newDanhMuc.MaDM, $"Thêm danh mục: {tenDM}", oldDataJson);
 
             // Quay lại trang Danh mục
             return RedirectToAction("DanhMuc");
@@ -393,9 +451,16 @@ namespace DoAn.Controllers
                 dmToUpdate.TenDM = tenDM;
                 dmToUpdate.GhiChu = ghiChu;
 
-                // Đánh dấu là đã sửa
+                // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
+                string oldDataJson = $"{dmToUpdate.MaDM}|{dmToUpdate.TenDM}|{dmToUpdate.GhiChu}";
+
                 db.Entry(dmToUpdate).State = EntityState.Modified;
                 db.SaveChanges();
+
+                // Ghi log vào Cassandra kèm old_data
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "UPDATE", "tblDanhMucHoa", maDM, $"Cập nhật danh mục: {tenDM}", oldDataJson);
             }
 
             // Quay lại trang Danh mục
@@ -414,11 +479,22 @@ namespace DoAn.Controllers
 
             if (dmToDelete != null)
             {
+                // Lưu tên danh mục để ghi log
+                string tenDM = dmToDelete.TenDM;
+
                 // (Cần kiểm tra xem có sản phẩm nào thuộc danh mục này không TRƯỚC KHI XÓA)
                 // (Tạm thời cho xóa luôn)
 
+                // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
+                string oldDataJson = $"{dmToDelete.MaDM}|{dmToDelete.TenDM}|{dmToDelete.GhiChu}";
+
                 db.tblDanhMucHoa.Remove(dmToDelete);
                 db.SaveChanges();
+
+                // Ghi log vào Cassandra kèm old_data
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "DELETE", "tblDanhMucHoa", maDM, $"Xóa danh mục: {tenDM}", oldDataJson);
             }
 
             return RedirectToAction("DanhMuc");
@@ -447,9 +523,16 @@ namespace DoAn.Controllers
             newLoaiHoa.TenLoaiChinh = collection["TenLoai_Add"];
             newLoaiHoa.MoTa = collection["MoTa_Add"];
 
+            // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
             db.tblLoaiHoaChinh.Add(newLoaiHoa);
             db.SaveChanges();
 
+            string oldDataJson = $"{newLoaiHoa.MaLoaiChinh}|{newLoaiHoa.TenLoaiChinh}|{newLoaiHoa.MoTa}";
+
+            // Ghi log vào Cassandra kèm old_data
+            var cassService = new CassandraService();
+            string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+            cassService.LogAdminAction(adminName, "CREATE", "tblLoaiHoaChinh", newLoaiHoa.MaLoaiChinh, $"Thêm loại hoa: {newLoaiHoa.TenLoaiChinh}", oldDataJson);
             return RedirectToAction("LoaiHoa");
         }
 
@@ -470,8 +553,18 @@ namespace DoAn.Controllers
             {
                 loaiToUpdate.TenLoaiChinh = tenLoai;
                 loaiToUpdate.MoTa = moTa;
+
+                // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
+                string oldDataJson = $"{loaiToUpdate.MaLoaiChinh}|{loaiToUpdate.TenLoaiChinh}|{loaiToUpdate.MoTa}";
+
                 db.Entry(loaiToUpdate).State = EntityState.Modified;
                 db.SaveChanges();
+
+                // Ghi log vào Cassandra kèm old_data
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "UPDATE", "tblLoaiHoaChinh", maLoai, $"Cập nhật loại hoa: {tenLoai}", oldDataJson);
+                return RedirectToAction("LoaiHoa");
             }
 
             return RedirectToAction("LoaiHoa");
@@ -488,9 +581,20 @@ namespace DoAn.Controllers
 
             if (loaiToDelete != null)
             {
+                // Lưu tên loại hoa để ghi log
+                string tenLoai = loaiToDelete.TenLoaiChinh;
+
                 // (Tương tự, cần kiểm tra xem có Hoa nào thuộc loại này không)
+                // Lưu chuỗi dữ liệu cũ để phục vụ khôi phục (Undo)
+                string oldDataJson = $"{loaiToDelete.MaLoaiChinh}|{loaiToDelete.TenLoaiChinh}|{loaiToDelete.MoTa}";
+
                 db.tblLoaiHoaChinh.Remove(loaiToDelete);
                 db.SaveChanges();
+
+                // Ghi log vào Cassandra kèm old_data
+                var cassService = new CassandraService();
+                string adminName = Session["TenNV"] != null ? Session["TenNV"].ToString() : "Admin";
+                cassService.LogAdminAction(adminName, "DELETE", "tblLoaiHoaChinh", maLoai, $"Xóa loại hoa: {tenLoai}", oldDataJson);
             }
 
             return RedirectToAction("LoaiHoa");
@@ -547,6 +651,363 @@ namespace DoAn.Controllers
                 db.Dispose();
             }
             base.Dispose(disposing);
+        }
+        // 1. Trang xem Clickstream dành cho Admin
+        public ActionResult Clickstream()
+        {
+            var listTopClick = new List<Tuple<tblHoa, int>>();
+            var top10HotIds = new List<int>();
+
+            try
+            {
+                var cass = DoAn.MvcApplication.CassandraSession;
+                if (cass != null)
+                {
+                    // Query lấy tất cả event view từ Cassandra
+                    var rs = cass.Execute("SELECT product_id FROM web_ban_hoa.user_events");
+                    var counts = rs.Select(r => r.GetValue<int>("product_id"))
+                                   .Where(id => id > 0)
+                                   .GroupBy(id => id)
+                                   .Select(g => new { ProductId = g.Key, Count = g.Count() })
+                                   .OrderByDescending(x => x.Count)
+                                   .ToList();
+
+                    // Lấy Top 10 ID có lượt click cao nhất làm danh sách "Bán chạy" tự động
+                    top10HotIds = counts.Take(10).Select(c => c.ProductId).ToList();
+
+                    // Lấy toàn bộ sản phẩm từ SQL Server để hiển thị danh sách cho Admin theo dõi
+                    var flowers = db.tblHoa.ToList();
+
+                    foreach (var hoa in flowers)
+                    {
+                        var clickInfo = counts.FirstOrDefault(c => c.ProductId == hoa.MaHoa);
+                        int clickCount = clickInfo != null ? clickInfo.Count : 0;
+                        listTopClick.Add(new Tuple<tblHoa, int>(hoa, clickCount));
+                    }
+
+                    // Sắp xếp danh sách cho Admin xem: Sản phẩm click nhiều nằm lên đầu
+                    listTopClick = listTopClick.OrderByDescending(x => x.Item2).ToList();
+                }
+            }
+            catch { }
+
+            // Lưu Top 10 Bán chạy vào Session để trang chủ Khách hàng đọc tự động
+            Session["Top10BanChayIds"] = top10HotIds;
+
+            return View(listTopClick);
+        }
+
+        // 2. Admin bấm nút Đề xuất sản phẩm
+        [HttpPost]
+        public ActionResult ToggleDeXuat(int maHoa)
+        {
+            var listDeXuat = Session["DeXuatProductIds"] as List<int> ?? new List<int>();
+            if (listDeXuat.Contains(maHoa))
+            {
+                listDeXuat.Remove(maHoa); // Bỏ đề xuất
+            }
+            else
+            {
+                listDeXuat.Add(maHoa); // Thêm đề xuất
+            }
+            Session["DeXuatProductIds"] = listDeXuat;
+            return RedirectToAction("Clickstream");
+        }
+        // 1. Xem danh sách Nhật ký thao tác của Admin
+        public ActionResult NhatKyThaoTac()
+        {
+            var logs = new List<dynamic>();
+            try
+            {
+                var cass = DoAn.MvcApplication.CassandraSession;
+                if (cass != null)
+                {
+                    var service = new CassandraService();
+                    service.InitAuditLogTable();
+
+                    var rs = cass.Execute("SELECT log_id, admin_name, action_type, target_table, target_id, description, old_data, created_at FROM web_ban_hoa.admin_audit_logs");
+                    foreach (var r in rs)
+                    {
+                        // Dùng ExpandoObject thay cho Anonymous Type để View đọc dynamic mượt mà
+                        IDictionary<string, object> logItem = new System.Dynamic.ExpandoObject();
+
+                        logItem["LogId"] = r.GetValue<TimeUuid>("log_id").ToGuid();
+                        logItem["AdminName"] = r.GetValue<string>("admin_name") ?? "Admin";
+                        logItem["ActionType"] = r.GetValue<string>("action_type") ?? "LOG";
+                        logItem["TargetTable"] = r.GetValue<string>("target_table") ?? "";
+                        logItem["TargetId"] = r.GetValue<int>("target_id");
+                        logItem["Description"] = r.GetValue<string>("description") ?? "";
+                        logItem["OldData"] = r.GetValue<string>("old_data") ?? "";
+
+                        // Ép kiểu thời gian an toàn
+                        DateTimeOffset createdAt = r.GetValue<DateTimeOffset>("created_at");
+                        logItem["CreatedAt"] = createdAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm:ss");
+
+                        logs.Add(logItem);
+                    }
+                }
+            }
+            catch { }
+
+            return View(logs);
+        }
+
+        // Khôi phục thao tác (Undo) từ Log Cassandra về SQL Server
+        // 1. HAM MAIN: Nhận request từ View
+        [HttpPost]
+        public ActionResult KhoiPhucThaoTac(Guid logId)
+        {
+            try
+            {
+                var cass = DoAn.MvcApplication.CassandraSession;
+                if (cass != null)
+                {
+                    var cql = "SELECT action_type, target_table, target_id, old_data FROM web_ban_hoa.admin_audit_logs WHERE log_id = ? ALLOW FILTERING";
+                    var stmt = new SimpleStatement(cql, TimeUuid.Parse(logId.ToString()));
+                    var row = cass.Execute(stmt).FirstOrDefault();
+
+                    if (row != null)
+                    {
+                        string actionType = (row.GetValue<string>("action_type") ?? "").Trim().ToUpper();
+                        string targetTable = (row.GetValue<string>("target_table") ?? "").Trim();
+                        int targetId = row.GetValue<int>("target_id");
+                        string oldDataJson = row.GetValue<string>("old_data") ?? "";
+
+                        // --- A. HOÀN TÁC THÊM MỚI (CREATE) -> XÓA DỮ LIỆU VỪA TẠO ---
+                        if (actionType == "CREATE")
+                        {
+                            UndoCreateGeneric(targetTable, targetId);
+                            TempData["ThongBao"] = $"Đã hoàn tác: Xóa bản ghi (ID: {targetId}) khỏi {targetTable}!";
+                        }
+                        // --- B. HOÀN TÁC SỬA (UPDATE) VÀ XÓA (DELETE) -> PHỤC HỒI TỪ JSON ---
+                        else if (actionType == "UPDATE" || actionType == "DELETE")
+                        {
+                            UndoUpdateOrDeleteGeneric(actionType, targetTable, targetId, oldDataJson);
+                            TempData["ThongBao"] = $"Thành công: Đã khôi phục dữ liệu cho {targetTable} (ID: {targetId})!";
+                        }
+                        // --- C. HOÀN TÁC ĐỀ XUẤT (PROMOTE/UNPROMOTE) ---
+                        else if (actionType == "PROMOTE" || actionType == "UNPROMOTE")
+                        {
+                            var listDeXuat = Session["DeXuatProductIds"] as List<int> ?? new List<int>();
+                            if (actionType == "PROMOTE") listDeXuat.Remove(targetId);
+                            else if (!listDeXuat.Contains(targetId)) listDeXuat.Add(targetId);
+
+                            Session["DeXuatProductIds"] = listDeXuat;
+                            TempData["ThongBao"] = "Đã hoàn tác trạng thái Đề xuất sản phẩm!";
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["ThongBao"] = "Lỗi khi khôi phục: " + ex.Message;
+            }
+
+            return RedirectToAction("NhatKyThaoTac");
+        }
+
+
+        // 2. HAM XỬ LÝ UNDO DÙNG GENERIC + REFLECTION (Cho Update & Delete)
+        private void UndoUpdateOrDeleteGeneric(string actionType, string tableName, int targetId, string oldDataJson)
+        {
+            if (string.IsNullOrEmpty(oldDataJson)) return;
+
+            var dbSet = GetDbSetByTableName(tableName);
+            if (dbSet == null) return;
+
+            Type entityType = GetEntityTypeByTableName(tableName);
+            if (entityType == null) return;
+
+            string trimmedData = oldDataJson.Trim();
+
+            if (actionType == "UPDATE")
+            {
+                var existingEntity = dbSet.Find(targetId);
+                if (existingEntity == null) return;
+
+                // TRƯỜNG HỢP 1: Nếu là chuỗi JSON chuẩn (Bắt đầu bằng dấu {)
+                if (trimmedData.StartsWith("{"))
+                {
+                    var oldValuesDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(trimmedData);
+                    if (oldValuesDict != null)
+                    {
+                        foreach (var item in oldValuesDict)
+                        {
+                            var prop = entityType.GetProperty(item.Key);
+                            if (prop != null && prop.CanWrite && item.Value != null)
+                            {
+                                object convertedValue = Convert.ChangeType(item.Value, Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType);
+                                prop.SetValue(existingEntity, convertedValue);
+                            }
+                        }
+                    }
+                }
+                // TRƯỜNG HỢP 2: Nếu là chuỗi CŨ dùng dấu gạch đứng | (ví dụ "43|4|1")
+                else if (trimmedData.Contains("|"))
+                {
+                    string[] parts = trimmedData.Split('|');
+
+                    // Xử lý hoàn tác cho Đơn hàng cũ
+                    if (tableName.Equals("tblHoaDon", StringComparison.OrdinalIgnoreCase) && parts.Length >= 2)
+                    {
+                        var donHang = existingEntity as tblHoaDon;
+                        if (donHang != null)
+                        {
+                            donHang.TinhTrang = int.Parse(parts[1]);
+                            if (parts.Length >= 3)
+                            {
+                                donHang.DaThanhToan = (parts[2] == "1" || parts[2].ToLower() == "true");
+                            }
+                        }
+                    }
+                    // Xử lý hoàn tác cho Danh mục cũ
+                    else if (tableName.Equals("tblDanhMucHoa", StringComparison.OrdinalIgnoreCase) && parts.Length >= 2)
+                    {
+                        var dm = existingEntity as tblDanhMucHoa;
+                        if (dm != null)
+                        {
+                            dm.TenDM = parts[1];
+                            dm.GhiChu = parts.Length > 2 ? parts[2] : "";
+                        }
+                    }
+                }
+
+                db.Entry(existingEntity).State = EntityState.Modified;
+                db.SaveChanges();
+            }
+            else if (actionType == "DELETE")
+            {
+                // TRƯỜNG HỢP 1: Dữ liệu log MỚI dạng JSON (Bắt đầu bằng {)
+                if (trimmedData.StartsWith("{"))
+                {
+                    var restoredEntity = JsonConvert.DeserializeObject(trimmedData, entityType);
+                    if (restoredEntity != null)
+                    {
+                        dbSet.Add(restoredEntity);
+                        db.SaveChanges();
+                    }
+                }
+                // TRƯỜNG HỢP 2: Dữ liệu log CŨ dạng gạch đứng | (Như trong ảnh DBeaver)
+                else if (trimmedData.Contains("|"))
+                {
+                    string[] parts = trimmedData.Split('|');
+
+                    if (tableName.Equals("tblHoa", StringComparison.OrdinalIgnoreCase) && parts.Length >= 5)
+                    {
+                        var hoaKhoiPhuc = new tblHoa
+                        {
+                            TenHoa = parts[0],
+                            GiaBan = decimal.Parse(parts[1]),
+                            AnhDaiDien = parts[2],
+                            MaDM = int.Parse(parts[3]),
+                            MaLoaiChinh = int.Parse(parts[4]),
+                            MoTa = parts.Length > 5 ? parts[5] : ""
+                        };
+                        db.tblHoa.Add(hoaKhoiPhuc);
+                        db.SaveChanges();
+                    }
+                    else if (tableName.Equals("tblDanhMucHoa", StringComparison.OrdinalIgnoreCase) && parts.Length >= 2)
+                    {
+                        var dmKhoiPhuc = new tblDanhMucHoa
+                        {
+                            TenDM = parts[1],
+                            GhiChu = parts.Length > 2 ? parts[2] : ""
+                        };
+                        db.tblDanhMucHoa.Add(dmKhoiPhuc);
+                        db.SaveChanges();
+                    }
+                }
+            }
+        }
+
+        // 3. HÀM XỬ LÝ UNDO CREATE (Xóa bản ghi vừa tạo) - TỐI ƯU DÙNG REFLECTION
+        private void UndoCreateGeneric(string tableName, int targetId)
+        {
+            if (targetId <= 0) return; // Nếu ID không hợp lệ thì bỏ qua
+
+            var dbSet = GetDbSetByTableName(tableName);
+            Type entityType = GetEntityTypeByTableName(tableName);
+
+            if (dbSet != null && entityType != null)
+            {
+                // Cách 1: Thử Find theo Primary Key tiêu chuẩn của EF
+                var entity = dbSet.Find(targetId);
+
+                // Cách 2: Nếu .Find() không ra (do đặt tên PK khác chuẩn), dùng Property Reflection để tìm
+                if (entity == null)
+                {
+                    foreach (var item in dbSet)
+                    {
+                        // Lấy property đại diện khóa chính (MaHoa, MaDM, MaHD, MaLoaiChinh...)
+                        var pkProp = entityType.GetProperties()
+                            .FirstOrDefault(p => p.Name.Equals("Ma" + tableName.Replace("tbl", ""), StringComparison.OrdinalIgnoreCase)
+                                              || p.Name.Equals("ID", StringComparison.OrdinalIgnoreCase)
+                                              || p.Name.EndsWith("ID", StringComparison.OrdinalIgnoreCase));
+
+                        if (pkProp != null)
+                        {
+                            var val = Convert.ToInt32(pkProp.GetValue(item));
+                            if (val == targetId)
+                            {
+                                entity = item;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Thực hiện xóa nếu tìm thấy
+                if (entity != null)
+                {
+                    dbSet.Remove(entity);
+                    db.SaveChanges();
+                }
+            }
+        }
+
+
+        // 4. HAM HELPER: Áp tên bảng chuỗi -> DbSet tương ứng trong DbContext
+        private dynamic GetDbSetByTableName(string tableName)
+        {
+            switch (tableName.ToLower())
+            {
+                case "tblhoa": return db.tblHoa;
+                case "tbldanhmuchoa": return db.tblDanhMucHoa;
+                case "tblloaihoachinh": return db.tblLoaiHoaChinh;
+                case "tblhoadon": return db.tblHoaDon;
+                default: return null;
+            }
+        }
+
+        // 5. HAM HELPER: Áp tên bảng chuỗi -> System.Type của Model
+        private Type GetEntityTypeByTableName(string tableName)
+        {
+            switch (tableName.ToLower())
+            {
+                case "tblhoa": return typeof(tblHoa);
+                case "tbldanhmuchoa": return typeof(tblDanhMucHoa);
+                case "tblloaihoachinh": return typeof(tblLoaiHoaChinh);
+                case "tblhoadon": return typeof(tblHoaDon);
+                default: return null;
+            }
+        }
+
+        // 3. Xóa lịch sử thao tác để tránh nặng dữ liệu
+        [HttpPost]
+        public ActionResult XoaLichSuThaoTac()
+        {
+            try
+            {
+                var cass = DoAn.MvcApplication.CassandraSession;
+                if (cass != null)
+                {
+                    cass.Execute("TRUNCATE web_ban_hoa.admin_audit_logs");
+                }
+            }
+            catch { }
+
+            TempData["ThongBao"] = "Đã dọn dẹp sạch sẽ toàn bộ nhật ký thao tác!";
+            return RedirectToAction("NhatKyThaoTac");
         }
     }
 }

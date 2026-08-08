@@ -1,0 +1,54 @@
+﻿@model IEnumerable<dynamic>
+@{
+    ViewBag.Title = "Thống kê Clickstream";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+    var dsDeXuat = Session["DeXuatProductIds"] as List<int> ?? new List<int>();
+}
+
+<h2 class="fw-bold mb-4">Thống Kê Clickstream & Xếp Hạng Xem Nhiều (Cassandra)</h2>
+
+<div class="card p-3 shadow-sm border-0">
+    <table class="table table-hover align-middle">
+        <thead>
+            <tr>
+                <th>Mã Hoa</th>
+                <th>Tên Sản Phẩm</th>
+                <th>Lượt Click (Cassandra)</th>
+                <th>Trạng Thái</th>
+                <th>Hành Động</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null)
+            {
+                foreach (var item in Model)
+                {
+                    bool isPromoted = dsDeXuat.Contains((int)item.Item1.MaHoa);
+                    <tr>
+                        <td>@item.Item1.MaHoa</td>
+                        <td><b>@item.Item1.TenHoa</b></td>
+                        <td><span class="badge bg-info">@item.Item2 lượt xem</span></td>
+                        <td>
+                            @if (isPromoted)
+                            {
+                                <span class="badge bg-danger">Đang Đề Xuất "Bán Chạy"</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Bình thường</span>
+                            }
+                        </td>
+                        <td>
+                            @using (Html.BeginForm("ToggleDeXuat", "Admin", new { maHoa = item.Item1.MaHoa }))
+                            {
+                                <button type="submit" class="btn btn-sm @(isPromoted ? "btn-outline-danger" : "btn-success")">
+                                    @(isPromoted ? "Bỏ Đề Xuất" : "Ghim Bán Chạy")
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            }
+        </tbody>
+    </table>
+</div>

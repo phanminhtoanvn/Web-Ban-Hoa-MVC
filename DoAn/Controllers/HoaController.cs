@@ -28,7 +28,10 @@ namespace DoAn.Controllers
             int pageNumber = (page ?? 1);
 
             var hoaList = db.tblHoa.Include(h => h.tblDanhMucHoa);
-
+            // Lấy danh sách ID đã được Admin đề xuất truyền ra View
+            // Gán danh sách Top 10 Bán chạy & Đề xuất từ Session sang ViewBag
+            ViewBag.Top10BanChay = Session["Top10BanChayIds"] as List<int> ?? new List<int>();
+            ViewBag.DanhSachDeXuat = Session["DeXuatProductIds"] as List<int> ?? new List<int>();
             // 1. Lọc Tìm kiếm (string q) - Dùng cho CẢ header với sidebar
             if (!string.IsNullOrEmpty(q))
             {
@@ -82,13 +85,37 @@ namespace DoAn.Controllers
             }
             ViewBag.LikedFlowers = likedFlowers;
 
-            // 6. Sắp xếp (Bắt buộc)
-            hoaList = hoaList.OrderBy(h => h.MaHoa);
+            // 6. Tự động lấy danh sách Top 10 Bán chạy từ Cassandra & Đề xuất từ Admin
+            List<int> top10Ids = new List<int>();
+            try
+            {
+                var cass = DoAn.MvcApplication.CassandraSession;
+                if (cass != null)
+                {
+                    var rs = cass.Execute("SELECT product_id FROM web_ban_hoa.user_events");
+                    top10Ids = rs.Select(r => r.GetValue<int>("product_id"))
+                                 .Where(id => id > 0)
+                                 .GroupBy(id => id)
+                                 .OrderByDescending(g => g.Count())
+                                 .Take(10)
+                                 .Select(g => g.Key)
+                                 .ToList();
+                }
+            }
+            catch { }
 
-            // 7. Phân trang và trả về View
-            return View(hoaList.ToPagedList(pageNumber, pageSize));
+            List<int> dsDeXuat = Session["DeXuatProductIds"] as List<int> ?? new List<int>();
 
+            ViewBag.Top10BanChay = top10Ids;
+            ViewBag.DanhSachDeXuat = dsDeXuat;
 
+            // 7. SẮP XẾP ƯU TIÊN: Bông được Đề xuất/Bán chạy sẽ nhảy LÊN ĐẦU
+            var sortedHoaList = hoaList.ToList()
+                .OrderByDescending(h => dsDeXuat.Contains(h.MaHoa) || top10Ids.Contains(h.MaHoa))
+                .ThenBy(h => h.MaHoa);
+
+            // 8. Phân trang và trả về View
+            return View(sortedHoaList.ToPagedList(pageNumber, pageSize));
         }
 
         public ActionResult ChiTietHoa(int? id)
@@ -134,7 +161,29 @@ namespace DoAn.Controllers
 
             // Nếu chưa có bình luận nào thì mặc định hiển thị 5 sao, ngược lại thì làm tròn 1 chữ số thập phân
             ViewBag.DiemTrungBinh = thongKeSao != null ? Math.Round(thongKeSao.DiemTrungBinh, 1) : 5.0;
+            // Async log: Khách xem chi tiết hoa (fire-and-forget sang Cassandra)
+            try
+            {
+                var sessionUserId = Session["MaKH"];
+                int userId = sessionUserId != null ? (int)sessionUserId : 0;
+                var productId = id ?? 0;
 
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var cass = DoAn.MvcApplication.CassandraSession;
+                        if (cass != null)
+                        {
+                            var ps = cass.Prepare("INSERT INTO web_ban_hoa.user_events (user_id, event_time, event_type, product_id, metadata) VALUES (?, ?, ?, ?, ?)");
+                            var bound = ps.Bind(userId, DateTime.UtcNow, "view", productId, null);
+                            cass.Execute(bound);
+                        }
+                    }
+                    catch { }
+                });
+            }
+            catch { }
             return View(hoa);
         }
 
@@ -210,7 +259,31 @@ namespace DoAn.Controllers
                 listHoa = listGia.Distinct().ToList();
             }
 
-            
+            // Async log: Khách thực hiện tìm kiếm hoa trên web
+            try
+            {
+                var sessionUserId = Session["MaKH"];
+                int userId = sessionUserId != null ? (int)sessionUserId : 0;
+                string kwSafe = kw ?? string.Empty;
+                int? cat = danhmuc;
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        var cass = DoAn.MvcApplication.CassandraSession;
+                        if (cass != null)
+                        {
+                            var ps = cass.Prepare("INSERT INTO web_ban_hoa.user_events (user_id, event_time, event_type, product_id, metadata) VALUES (?, ?, ?, ?, ?)");
+                            string metadata = $"kw:{kwSafe};danhmuc:{(cat.HasValue ? cat.Value.ToString() : "null")}";
+                            var bound = ps.Bind(userId, DateTime.UtcNow, "search", 0, metadata);
+                            cass.Execute(bound);
+                        }
+                    }
+                    catch { }
+                });
+            }
+            catch { }
             return View("Index", listHoa);
         }
 

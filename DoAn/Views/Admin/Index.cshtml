@@ -115,7 +115,21 @@
             <a href="@Url.Action("DonHang", "Admin")" class="stretched-link"></a>
         </div>
     </div>
-
+    @if (isAdmin)
+    {
+        <div class="col-md-4">
+            <div class="stat-glass-card">
+                <div class="stat-icon bg-gradient-pink">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div>
+                    <div class="stat-value text-pink">Clickstream</div>
+                    <div class="stat-label">Xếp hạng & Đề xuất Bán chạy</div>
+                </div>
+                <a href="@Url.Action("Clickstream", "Admin")" class="stretched-link"></a>
+            </div>
+        </div>
+    }
     @if (isAdmin)
     {
         <div class="col-md-4">
@@ -139,6 +153,21 @@
                     <div class="stat-value text-primary">@ViewBag.SoKhachHang</div>
                     <div class="stat-label">Tổng số khách hàng</div>
                 </div>
+            </div>
+        </div>
+    }
+    @if (isAdmin)
+    {
+        <div class="col-md-4">
+            <div class="stat-glass-card">
+                <div class="stat-icon bg-gradient-blue">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div>
+                    <div class="stat-value text-primary">Nhật ký</div>
+                    <div class="stat-label">Lịch sử thao tác & Undo</div>
+                </div>
+                <a href="@Url.Action("NhatKyThaoTac", "Admin")" class="stretched-link"></a>
             </div>
         </div>
     }
@@ -196,6 +225,7 @@
 }
 
 @section Scripts {
+
     @if (isAdmin)
     {
 
