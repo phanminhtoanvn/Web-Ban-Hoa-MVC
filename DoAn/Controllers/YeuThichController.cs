@@ -1,7 +1,10 @@
 ﻿using DoAn.Data;
 using DoAn.Models;
+using DoAn.Services;
 using MongoDB.Driver;
+using Neo4jClient;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Mvc;
 
 namespace DoAn.Controllers
@@ -12,7 +15,7 @@ namespace DoAn.Controllers
         private QL_BanHoaEntities2 db = new QL_BanHoaEntities2();
 
         [HttpPost]
-        public ActionResult ToggleYeuThich(int maHoa)
+        public async Task<ActionResult> ToggleYeuThich(int maHoa)
         {
             // Kiểm tra đăng nhập
             if (Session["MaKH"] == null)
@@ -22,6 +25,8 @@ namespace DoAn.Controllers
 
             int maKH = (int)Session["MaKH"];
             var wishlist = mongoDb.HoaYeuThich_Wishlists.Find(x => x.MaKH == maKH).FirstOrDefault();
+            var neo4j = new Neo4jService();
+            var client = await neo4j.GetClient();
 
             if (wishlist == null)
             {
@@ -29,6 +34,19 @@ namespace DoAn.Controllers
                 wishlist = new HoaYeuThichMongo { MaKH = maKH };
                 wishlist.DanhSachMaHoa.Add(maHoa);
                 mongoDb.HoaYeuThich_Wishlists.InsertOne(wishlist);
+
+                await client.Cypher
+                    .Match("(c:Customer)")
+                    .Match("(f:Flower)")
+                    .Where("c.id = $customerId")
+                    .AndWhere("f.id = $flowerId")
+                    .WithParam("customerId", maKH)
+                    .WithParam("flowerId", maHoa)
+                    .Merge("(c)-[r:LIKED]->(f)")
+                    .Set("r.liked = true")
+                    .Set("r.addedAt = datetime()")
+                    .ExecuteWithoutResultsAsync();
+
                 return Json(new { success = true, liked = true });
             }
             else
@@ -39,6 +57,16 @@ namespace DoAn.Controllers
                     // Nếu có rồi -> Bỏ thích (Xóa khỏi mảng)
                     var update = Builders<HoaYeuThichMongo>.Update.Pull(x => x.DanhSachMaHoa, maHoa);
                     mongoDb.HoaYeuThich_Wishlists.UpdateOne(x => x.Id == wishlist.Id, update);
+
+                    await client.Cypher
+                        .Match("(c:Customer)-[r:LIKED]->(f:Flower)")
+                        .Where("c.id = $customerId")
+                        .AndWhere("f.id = $flowerId")
+                        .WithParam("customerId", maKH)
+                        .WithParam("flowerId", maHoa)
+                        .Delete("r")
+                        .ExecuteWithoutResultsAsync();
+
                     return Json(new { success = true, liked = false });
                 }
                 else
@@ -46,6 +74,19 @@ namespace DoAn.Controllers
                     // Nếu chưa có -> Thêm vào yêu thích (Push vào mảng)
                     var update = Builders<HoaYeuThichMongo>.Update.Push(x => x.DanhSachMaHoa, maHoa);
                     mongoDb.HoaYeuThich_Wishlists.UpdateOne(x => x.Id == wishlist.Id, update);
+
+                    await client.Cypher
+                        .Match("(c:Customer)")
+                        .Match("(f:Flower)")
+                        .Where("c.id = $customerId")
+                        .AndWhere("f.id = $flowerId")
+                        .WithParam("customerId", maKH)
+                        .WithParam("flowerId", maHoa)
+                        .Merge("(c)-[r:LIKED]->(f)")
+                        .Set("r.liked = true")
+                        .Set("r.addedAt = datetime()")
+                        .ExecuteWithoutResultsAsync();
+
                     return Json(new { success = true, liked = true });
                 }
             }

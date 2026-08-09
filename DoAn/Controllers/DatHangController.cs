@@ -12,6 +12,7 @@ namespace DoAn.Controllers
 {
     public class DatHangController : Controller
     {
+
         QL_BanHoaEntities2 db = new QL_BanHoaEntities2();
         // GET: DatHang
         private List<GioHang> LayGioHang()
@@ -95,6 +96,23 @@ namespace DoAn.Controllers
             if (Session["MaKH"] != null)
             {
                 hoaDon.MaKH = (int)Session["MaKH"];
+
+                var khachHang = db.tblKhachHang.Find(hoaDon.MaKH);
+                if (khachHang != null)
+                {
+                    await client.Cypher
+                        .Merge("(c:Customer {id: $id})")
+                        .WithParam("id", khachHang.MaKH)
+                        .Set("c.name = $name")
+                        .Set("c.email = $email")
+                        .Set("c.phone = $phone")
+                        .Set("c.address = $address")
+                        .WithParam("name", khachHang.TenKH)
+                        .WithParam("email", khachHang.Email)
+                        .WithParam("phone", khachHang.DienThoai)
+                        .WithParam("address", khachHang.DiaChi)
+                        .ExecuteWithoutResultsAsync();
+                }
             }
             else
             {
@@ -108,6 +126,19 @@ namespace DoAn.Controllers
                     khachCu.TenKH = form["TenKH"];
                     khachCu.DiaChi = form["DiaChi"];
                     db.Entry(khachCu).State = EntityState.Modified;
+
+                    await client.Cypher
+                        .Merge("(c:Customer {id: $id})")
+                        .WithParam("id", khachCu.MaKH)
+                        .Set("c.name = $name")
+                        .Set("c.email = $email")
+                        .Set("c.phone = $phone")
+                        .Set("c.address = $address")
+                        .WithParam("name", khachCu.TenKH)
+                        .WithParam("email", khachCu.Email)
+                        .WithParam("phone", khachCu.DienThoai)
+                        .WithParam("address", khachCu.DiaChi)
+                        .ExecuteWithoutResultsAsync();
 
                     // Auto Login cho khách cũ
                     Session["MaKH"] = khachCu.MaKH;
@@ -127,7 +158,13 @@ namespace DoAn.Controllers
                     .Merge("(c:Customer {id: $id})")
                     .WithParam("id", khachMoi.MaKH)
                     .Set("c.name = $name")
+                    .Set("c.email = $email")
+                    .Set("c.phone = $phone")
+                    .Set("c.address = $address")
                     .WithParam("name", khachMoi.TenKH)
+                    .WithParam("email", khachMoi.Email)
+                    .WithParam("phone", khachMoi.DienThoai)
+                    .WithParam("address", khachMoi.DiaChi)
                     .ExecuteWithoutResultsAsync();
 
 
@@ -140,7 +177,6 @@ namespace DoAn.Controllers
                 Session["UserType"] = "Customer"; // Đánh dấu là đã đăng nhập
             }
 
-            
             db.tblHoaDon.Add(hoaDon);
             db.SaveChanges();
             int maHDMoiTao = hoaDon.MaHD;
@@ -157,14 +193,29 @@ namespace DoAn.Controllers
             db.SaveChanges();
             foreach (var item in lstGioHang)
             {
+                decimal totalItemAmount = item.iSoLuong * item.dGiaBan;
+
                 await client.Cypher
-                    .Match("(c:Customer)")
-                    .Match("(f:Flower)")
-                    .Where("c.id = $customerId")
-                    .AndWhere("f.id = $flowerId")
+                    .Merge("(c:Customer {id: $customerId})")
+                    .Merge("(f:Flower {id: $flowerId})")
                     .WithParam("customerId", hoaDon.MaKH)
                     .WithParam("flowerId", item.iMaHoa)
-                    .Merge("(c)-[:BOUGHT]->(f)")
+                    .WithParam("quantity", item.iSoLuong)
+                    .WithParam("unitPrice", item.dGiaBan)
+                    .WithParam("totalItemAmount", totalItemAmount)
+                    .WithParam("orderDate", hoaDon.NgayLap)
+                    .WithParam("totalAmount", hoaDon.TongTien)
+                    .WithParam("status", hoaDon.TinhTrang)
+                    .WithParam("paymentStatus", hoaDon.DaThanhToan)
+                    .WithParam("deliveryAddress", hoaDon.DiaChiGiaoHang)
+                    .Merge("(c)-[r:BOUGHT]->(f)")
+                    .Set("r.quantity = COALESCE(r.quantity, 0) + $quantity")
+                    .Set("r.unitPrice = $unitPrice")
+                    .Set("r.totalAmount = COALESCE(r.totalAmount, 0) + $totalItemAmount")
+                    .Set("r.lastBought = $orderDate")
+                    .Set("r.status = $status")
+                    .Set("r.paymentStatus = $paymentStatus")
+                    .Set("r.deliveryAddress = $deliveryAddress")
                     .ExecuteWithoutResultsAsync();
             }
 

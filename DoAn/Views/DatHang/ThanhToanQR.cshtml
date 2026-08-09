@@ -42,7 +42,7 @@
         <h2 class="fw-bold mb-3">Quét Mã QR</h2>
 
         <div id="payment-timer" class="timer-badge">
-            <i class="fas fa-clock me-2"></i>Hiệu lực: 10:00
+            <i class="fas fa-clock me-2"></i>Hiệu lực: 5:00
         </div>
 
         <div id="expired-message" style="display:none;" class="alert alert-danger rounded-pill">
@@ -88,21 +88,15 @@
 @section Scripts {
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            var duration = 600; // 10 phút
+                var duration = 5 * 60; // 5 phút (300 giây)
             var timerElement = document.getElementById('payment-timer');
             var expiredMessage = document.getElementById('expired-message');
             var qrImage = document.getElementById('qr-image');
             var btnPaid = document.getElementById('btn-paid');
             var btnCancel = document.getElementById('btn-cancel');
 
-            var timerInterval = setInterval(function () {
-                var minutes = Math.floor(duration / 60);
-                var seconds = duration % 60;
-                seconds = seconds < 10 ? "0" + seconds : seconds;
-                timerElement.innerHTML = "<i class='fas fa-clock me-2'></i>Hiệu lực: " + minutes + ":" + seconds;
-                duration--;
-
-                if (duration < 0) {
+                // Utility to mark expired UI state
+                function markExpired() {
                     clearInterval(timerInterval);
                     timerElement.style.display = 'none';
                     qrImage.style.opacity = '0.2'; // Làm mờ QR thay vì ẩn hẳn
@@ -112,7 +106,66 @@
                     btnCancel.classList.remove('btn-light');
                     btnCancel.classList.add('btn-outline-danger');
                 }
-            }, 1000);
+
+                // Start timer interval
+                var timerInterval = setInterval(function () {
+                    var minutes = Math.floor(duration / 60);
+                    var seconds = duration % 60;
+                    seconds = seconds < 10 ? "0" + seconds : seconds;
+                    timerElement.innerHTML = "<i class='fas fa-clock me-2'></i>Hiệu lực: " + minutes + ":" + seconds;
+                    duration--;
+
+                    if (duration < 0) {
+                        markExpired();
+                    }
+                }, 1000);
+
+                // Create QR payment token on server and poll its status
+                var token = null;
+                var orderId = @((ViewBag.MaHD ?? 0));
+
+                if (orderId > 0) {
+                    fetch('/Hoa/CreateQrPayment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: new URLSearchParams({ orderId: orderId })
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (data) {
+                        if (data && data.token) {
+                            token = data.token;
+                            // Optional: you could reload QR image URL to include token if your provider supports it
+                            // Start polling server for token status every 3s
+                            var poll = setInterval(function () {
+                                fetch('/Hoa/CheckQrPayment?token=' + encodeURIComponent(token))
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (st) {
+                                        if (!st || st.status === 'expired' || st.status === 'invalid') {
+                                            clearInterval(poll);
+                                            markExpired();
+                                            return;
+                                        }
+                                        if (st.status === 'paid') {
+                                            clearInterval(poll);
+                                            window.location.href = '/DatHang/DatHangThanhCong?id=' + encodeURIComponent(orderId);
+                                            return;
+                                        }
+                                        // status === 'active' => keep waiting
+                                    })
+                                    .catch(function () {
+                                        // network error -> ignore, continue polling
+                                    });
+                            }, 3000);
+                        }
+                    })
+                    .catch(function () {
+                        // Failed to create token - treat as expired
+                        markExpired();
+                    });
+                } else {
+                    // No order id - expire immediately
+                    markExpired();
+                }
         });
     </script>
 }

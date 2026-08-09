@@ -83,7 +83,13 @@ namespace DoAn.Controllers
                 .Merge("(c:Customer {id: $id})")
                 .WithParam("id", khMoi.MaKH)
                 .Set("c.name = $name")
+                .Set("c.email = $email")
+                .Set("c.phone = $phone")
+                .Set("c.address = $address")
                 .WithParam("name", khMoi.TenKH)
+                .WithParam("email", khMoi.Email)
+                .WithParam("phone", khMoi.DienThoai)
+                .WithParam("address", khMoi.DiaChi)
                 .ExecuteWithoutResultsAsync();
 
             // 1. TỰ ĐỘNG ĐĂNG NHẬP LUÔN (Không bắt khách nhập lại nữa)

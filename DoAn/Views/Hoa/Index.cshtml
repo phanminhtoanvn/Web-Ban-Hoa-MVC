@@ -68,7 +68,8 @@
                     q = Request.QueryString["q"],
                     maDM = Request.QueryString["maDM"],
                     maLoaiChinh = Request.QueryString["maLoaiChinh"],
-                    gia = Request.QueryString.GetValues("gia")
+                    gia = Request.QueryString.GetValues("gia"),
+                    sortByViews = Request.QueryString["sortByViews"]
                 }),
                 new PagedListRenderOptions
                 {

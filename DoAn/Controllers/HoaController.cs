@@ -11,6 +11,8 @@ using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using System.Web;
+using Newtonsoft.Json;
+using StackExchange.Redis;
 using System.Web.Mvc;
 
 namespace DoAn.Controllers
@@ -22,29 +24,45 @@ namespace DoAn.Controllers
         // (Nhớ using System.Data.Entity; và using PagedList; ở đầu file nha)
         MongoDbContext mongoDb = new MongoDbContext();
 
-        public ActionResult Index(string q, int? maDM, int? maLoaiChinh, int[] gia, int? page)
+        public ActionResult Index(string q, int? maDM, int? maLoaiChinh, int[] gia, bool sortByViews = false, int? page = null)
         {
+            var cache = RedisService.GetDatabase();
+
+            string priceKey = gia != null && gia.Length > 0 ? string.Join(",", gia.OrderBy(x => x)) : "";
+            string cacheKey = $"flowers:{q}:{maDM}:{maLoaiChinh}:{priceKey}:{sortByViews}:{page}";
+
+            var cachedData = cache.StringGet(cacheKey);
+
+            if (!sortByViews && !cachedData.IsNullOrEmpty)
+            {
+                var hoaCache = JsonConvert.DeserializeObject<List<tblHoa>>(cachedData);
+
+                ViewBag.LoaiHoaList = db.tblLoaiHoaChinh.ToList();
+
+                return View(hoaCache.ToPagedList(page ?? 1, 8));
+            }
+
             int pageSize = 8;
             int pageNumber = (page ?? 1);
 
-            var hoaList = db.tblHoa.Include(h => h.tblDanhMucHoa);
+            var hoaQuery = db.tblHoa.Include(h => h.tblDanhMucHoa);
 
             // 1. Lọc Tìm kiếm (string q) - Dùng cho CẢ header với sidebar
             if (!string.IsNullOrEmpty(q))
             {
-                hoaList = hoaList.Where(h => h.TenHoa.Contains(q));
+                hoaQuery = hoaQuery.Where(h => h.TenHoa.Contains(q));
             }
 
             // 2. Lọc Danh mục (Hoa sinh nhật...)
             if (maDM.HasValue)
             {
-                hoaList = hoaList.Where(h => h.MaDM == maDM);
+                hoaQuery = hoaQuery.Where(h => h.MaDM == maDM);
             }
 
             // 3. LỌC MỚI: Lọc Loại hoa (Hoa Hồng, Ly...)
             if (maLoaiChinh.HasValue)
             {
-                hoaList = hoaList.Where(h => h.MaLoaiChinh == maLoaiChinh);
+                hoaQuery = hoaQuery.Where(h => h.MaLoaiChinh == maLoaiChinh);
             }
 
             // 4. Lọc theo GIÁ (int[] gia)
@@ -54,9 +72,8 @@ namespace DoAn.Controllers
                 bool check2 = gia.Contains(2);
                 bool check3 = gia.Contains(3);
                 bool check4 = gia.Contains(4);
-                // Đây là logic "HOẶC" (OR)
-                // Ví dụ: Nếu ní check (gia.Contains(1) || gia.Contains(2))
-                hoaList = hoaList.Where(h =>
+
+                hoaQuery = hoaQuery.Where(h =>
                     (check1 && h.GiaBan >= 0 && h.GiaBan <= 400000) ||
                     (check2 && h.GiaBan >= 500000 && h.GiaBan <= 1000000) ||
                     (check3 && h.GiaBan > 1000000 && h.GiaBan <= 2000000) ||
@@ -82,17 +99,55 @@ namespace DoAn.Controllers
             }
             ViewBag.LikedFlowers = likedFlowers;
 
-            // 6. Sắp xếp (Bắt buộc)
-            hoaList = hoaList.OrderBy(h => h.MaHoa);
+            // Chuyển sang danh sách thực thi để lọc / sắp xếp lượt xem
+            var hoaList = hoaQuery.ToList();
+
+            Dictionary<int, int> viewCounts = null;
+
+            if (sortByViews)
+            {
+                viewCounts = hoaList.ToDictionary(
+                    h => h.MaHoa,
+                    h => {
+                        var value = cache.StringGet($"view:flower:{h.MaHoa}");
+                        return value.HasValue && int.TryParse(value, out int parsed) ? parsed : 0;
+                    }
+                );
+
+                hoaList = hoaList.OrderByDescending(h => viewCounts[h.MaHoa])
+                                   .ThenBy(h => h.MaHoa)
+                                   .ToList();
+
+                ViewBag.ViewCounts = viewCounts;
+            }
+            else
+            {
+                hoaList = hoaList.OrderBy(h => h.MaHoa).ToList();
+            }
+
+            var result = hoaList.Select(h => new tblHoa
+            {
+                MaHoa = h.MaHoa,
+                TenHoa = h.TenHoa,
+                GiaBan = h.GiaBan,
+                AnhDaiDien = h.AnhDaiDien,
+                MaDM = h.MaDM,
+                MaLoaiChinh = h.MaLoaiChinh
+            }).ToList();
+
+            cache.StringSet(
+                cacheKey,
+                JsonConvert.SerializeObject(result),
+                TimeSpan.FromMinutes(5)
+            );
 
             // 7. Phân trang và trả về View
             return View(hoaList.ToPagedList(pageNumber, pageSize));
-
-
         }
 
         public ActionResult ChiTietHoa(int? id)
         {
+
             if (id == null)
             {
                 return new HttpStatusCodeResult(HttpStatusCode.BadRequest);
@@ -102,6 +157,11 @@ namespace DoAn.Controllers
             {
                 return HttpNotFound();
             }
+            var cache = RedisService.GetDatabase();
+
+            cache.StringIncrement($"view:flower:{id}");
+
+            ViewBag.LuotXem = cache.StringGet($"view:flower:{id}");
 
             // (Code gốc của bạn) - Sản phẩm cùng loại hoa (Dùng cho "Sản phẩm tương tự")
             List<tblHoa> lstHoaCungLoai = db.tblHoa.Where(n => n.MaLoaiChinh == hoa.MaLoaiChinh && n.MaHoa != id).Take(4).ToList();
@@ -116,24 +176,30 @@ namespace DoAn.Controllers
             ViewBag.HinhAnhGallery = db.tblHinhAnh
                 .Where(h => h.MaHoa == id).ToList();
 
-            // 2. Lấy bình luận từ Mongo
-            var lstBinhLuan = mongoDb.BinhLuan_Reviews
-                                     .Find(b => b.MaHoa == id)
-                                     .SortByDescending(b => b.Ngay)
-                                     .ToList();
-            ViewBag.BinhLuan = lstBinhLuan;
+            // 2. Lấy bình luận từ Mongo (nếu MongoDB đang chạy)
+            try
+            {
+                var lstBinhLuan = mongoDb.BinhLuan_Reviews
+                                         .Find(b => b.MaHoa == id)
+                                         .SortByDescending(b => b.Ngay)
+                                         .ToList();
+                ViewBag.BinhLuan = lstBinhLuan;
 
-            // THỐNG KÊ MONGODB: Tính điểm sao trung bình bằng Aggregation Framework
-            var thongKeSao = mongoDb.BinhLuan_Reviews.Aggregate()
-                                    .Match(b => b.MaHoa == id)
-                                    .Group(b => b.MaHoa, g => new {
-                                        MaHoa = g.Key,
-                                        DiemTrungBinh = g.Average(x => x.SoSao)
-                                    })
-                                    .FirstOrDefault();
+                var thongKeSao = mongoDb.BinhLuan_Reviews.Aggregate()
+                                        .Match(b => b.MaHoa == id)
+                                        .Group(b => b.MaHoa, g => new {
+                                            MaHoa = g.Key,
+                                            DiemTrungBinh = g.Average(x => x.SoSao)
+                                        })
+                                        .FirstOrDefault();
 
-            // Nếu chưa có bình luận nào thì mặc định hiển thị 5 sao, ngược lại thì làm tròn 1 chữ số thập phân
-            ViewBag.DiemTrungBinh = thongKeSao != null ? Math.Round(thongKeSao.DiemTrungBinh, 1) : 5.0;
+                ViewBag.DiemTrungBinh = thongKeSao != null ? Math.Round(thongKeSao.DiemTrungBinh, 1) : 5.0;
+            }
+            catch (Exception)
+            {
+                ViewBag.BinhLuan = new List<DoAn.Models.BinhLuanMongo>();
+                ViewBag.DiemTrungBinh = 5.0;
+            }
 
             return View(hoa);
         }
@@ -214,6 +280,84 @@ namespace DoAn.Controllers
             return View("Index", listHoa);
         }
 
+        // Tạo QR payment token và lưu vào Redis với TTL 1 phút
+        [HttpPost]
+        public ActionResult CreateQrPayment(int orderId)
+        {
+            var cache = RedisService.GetDatabase();
+
+            var order = db.tblHoaDon.Find(orderId);
+            if (order == null)
+            {
+                return Json(new { success = false, message = "Đơn hàng không tồn tại" }, JsonRequestBehavior.AllowGet);
+            }
+
+            var orderItems = db.tblChiTietHoaDon
+                .Where(x => x.MaHD == orderId)
+                .Select(x => new
+                {
+                    x.MaHoa,
+                    x.SoLuong,
+                    x.GiaBan
+                })
+                .ToList();
+
+            var customer = order.MaKH.HasValue ? db.tblKhachHang.Find(order.MaKH.Value) : null;
+
+            string token = Guid.NewGuid().ToString("N");
+            var paymentData = new
+            {
+                OrderId = orderId,
+                CreatedUtc = DateTime.UtcNow,
+                OrderCode = order.MaHD,
+                TotalAmount = order.TongTien,
+                Status = order.DaThanhToan == true ? "Paid" : "Pending",
+                CustomerName = customer?.TenKH,
+                CustomerPhone = customer?.DienThoai,
+                CustomerEmail = customer?.Email,
+                ShippingAddress = order.DiaChiGiaoHang,
+                Items = orderItems
+            };
+
+            // Lưu key với TTL 5 phút (300 giây)
+            cache.StringSet($"qr_pay:{token}", JsonConvert.SerializeObject(paymentData), TimeSpan.FromMinutes(5));
+
+            return Json(new { success = true, token = token, expiresInSeconds = 300, data = paymentData });
+        }
+
+        // Kiểm tra token QR còn hiệu lực hay không
+        [HttpGet]
+        public ActionResult CheckQrPayment(string token)
+        {
+            if (string.IsNullOrEmpty(token))
+            {
+                return Json(new { status = "invalid" }, JsonRequestBehavior.AllowGet);
+            }
+
+            var cache = RedisService.GetDatabase();
+
+            var val = cache.StringGet($"qr_pay:{token}");
+            if (val.IsNullOrEmpty)
+            {
+                // Key không tồn tại => đã hết hạn hoặc chưa được tạo
+                return Json(new { status = "expired" }, JsonRequestBehavior.AllowGet);
+            }
+
+            dynamic data = JsonConvert.DeserializeObject<dynamic>(val);
+            int orderId = data != null && data.OrderId != null ? (int)data.OrderId : 0;
+
+            if (orderId > 0)
+            {
+                var order = db.tblHoaDon.Find(orderId);
+                if (order != null && order.DaThanhToan == true)
+                {
+                    return Json(new { status = "paid", data = data }, JsonRequestBehavior.AllowGet);
+                }
+            }
+
+            return Json(new { status = "active", data = data }, JsonRequestBehavior.AllowGet);
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<ActionResult> ThemBinhLuan(int MaHoa, string NoiDung, int SoSao)
@@ -251,9 +395,13 @@ namespace DoAn.Controllers
                     .AndWhere("f.id = $flowerId")
                     .WithParam("customerId", maKH)
                     .WithParam("flowerId", MaHoa)
+                    .WithParam("rating", SoSao)
+                    .WithParam("comment", NoiDung)
+                    .WithParam("reviewDate", DateTime.Now)
                     .Merge("(c)-[r:REVIEWED]->(f)")
                     .Set("r.rating = $rating")
-                    .WithParam("rating", SoSao)
+                    .Set("r.comment = $comment")
+                    .Set("r.reviewDate = $reviewDate")
                     .ExecuteWithoutResultsAsync();
             }
 

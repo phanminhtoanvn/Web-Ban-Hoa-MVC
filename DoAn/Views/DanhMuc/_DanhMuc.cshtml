@@ -149,6 +149,7 @@
                 // Logic để hiển thị tên loại hoa đang chọn hiện tại
                 var selectedMa = Request.QueryString["maLoaiChinh"];
                 var selectedName = "-- Tất cả --"; // Mặc định
+                var selectedSortByViews = Request.QueryString["sortByViews"] == "true";
 
                 if (!string.IsNullOrEmpty(selectedMa) && ViewBag.LoaiHoaList != null)
                 {
@@ -230,6 +231,14 @@
                     <input class="form-check-input" type="checkbox" name="gia" value="4" id="gia4">
                     <label class="form-check-label small" for="gia4">Trên 2.000.000đ</label>
                 </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label"><i class="fas fa-eye me-1 text-pink"></i> Lượt xem</label>
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="sortByViews" value="true" id="sortByViews" @(selectedSortByViews ? "checked" : "")>
+                <label class="form-check-label small" for="sortByViews">Sản phẩm được tìm kiếm nhiều nhất</label>
             </div>
         </div>
 
